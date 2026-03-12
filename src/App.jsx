@@ -24,11 +24,11 @@ const COMPANY_DEFAULT = {
 };
 
 const QUESTIONS_DEFAULT = [
-  { id:1, type:"single",   question:"현재 가장 필요하다고 느끼는 지원은 무엇인가요?",              options:["생활비·경제적 지원","돌봄·의료 서비스","심리·정서 지원","취업·자립 지원"] },
-  { id:2, type:"multiple", question:"현재 어떤 어려움을 겪고 계신가요? (해당 항목 모두 선택)",   options:["경제적 어려움","건강 문제","고립감·외로움","주거 불안","양육·돌봄 부담","취업·실직 문제"] },
-  { id:3, type:"single",   question:"복지 서비스를 이용해보신 경험이 있으신가요?",                options:["있다 — 도움이 됐다","있다 — 아쉬웠다","없다 — 이용하고 싶다","없다 — 잘 모르겠다"] },
-  { id:4, type:"text",     question:"현재 상황이나 바라는 점을 자유롭게 적어주세요.",             placeholder:"예: 혼자 생활하는데 가끔 도움이 필요합니다..." },
-  { id:5, type:"single",   question:"센터 서비스를 알게 된 경로는 어디인가요?",                   options:["지인 소개","인터넷 검색","주민센터 안내","현수막·홍보물"] },
+  { id:1, type:"single",   question:"현재 가장 필요하다고 느끼는 지원은 무엇인가요?",            options:["생활비·경제적 지원","돌봄·의료 서비스","심리·정서 지원","취업·자립 지원"] },
+  { id:2, type:"multiple", question:"현재 어떤 어려움을 겪고 계신가요? (해당 항목 모두 선택)", options:["경제적 어려움","건강 문제","고립감·외로움","주거 불안","양육·돌봄 부담","취업·실직 문제"] },
+  { id:3, type:"single",   question:"복지 서비스를 이용해보신 경험이 있으신가요?",               options:["있다 — 도움이 됐다","있다 — 아쉬웠다","없다 — 이용하고 싶다","없다 — 잘 모르겠다"] },
+  { id:4, type:"text",     question:"현재 상황이나 바라는 점을 자유롭게 적어주세요.",            placeholder:"예: 혼자 생활하는데 가끔 도움이 필요합니다..." },
+  { id:5, type:"single",   question:"센터 서비스를 알게 된 경로는 어디인가요?",                  options:["지인 소개","인터넷 검색","주민센터 안내","현수막·홍보물"] },
 ];
 
 const LOTTERY_DEFAULT = {
@@ -41,6 +41,7 @@ const LOTTERY_DEFAULT = {
 const apiGet  = async (action) => { const r = await fetch(`${API_URL}?action=${action}`); return r.json(); };
 const apiPost = async (action, data) => { const r = await fetch(API_URL,{method:"POST",body:JSON.stringify({action,data})}); return r.json(); };
 
+// ── CSS ────────────────────────────────────────────────
 const css = `
   @import url('https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Pretendard:wght@300;400;500;600&display=swap');
   :root {
@@ -49,6 +50,8 @@ const css = `
     --terra:#c8652a; --terra-l:#e07a3a; --terra-bg:rgba(200,101,42,0.08);
     --sage:#6b8f71; --sage-l:#8aac90;
     --gold:#d4952a; --gold-l:#f0b84a; --gold-bg:rgba(212,149,42,0.10);
+    --correct:#3a8f5a; --correct-bg:rgba(58,143,90,0.08); --correct-border:#3a8f5a;
+    --wrong:#c04040; --wrong-bg:rgba(192,64,64,0.08); --wrong-border:#c04040;
     --text:#2d1f14; --muted:#9c7c62; --muted2:#c4a98a;
     --shadow:0 4px 32px rgba(180,120,60,0.10);
   }
@@ -68,16 +71,46 @@ const css = `
   .progress-label{font-size:12px;color:var(--muted2);white-space:nowrap;}
   .options{display:flex;flex-direction:column;gap:9px;margin-bottom:32px;}
   .opt{display:flex;align-items:center;gap:14px;padding:15px 20px;border:1.5px solid var(--border);border-radius:14px;background:transparent;cursor:pointer;text-align:left;color:var(--text);font-family:inherit;font-size:14.5px;font-weight:400;transition:all .2s;line-height:1.4;}
-  .opt:hover{border-color:var(--terra-l);background:var(--terra-bg);}
+  .opt:hover:not(:disabled){border-color:var(--terra-l);background:var(--terra-bg);}
   .opt.sel{border-color:var(--terra);background:var(--terra-bg);color:var(--terra);font-weight:500;}
+  .opt:disabled{cursor:default;}
+
+  /* 퀴즈 정답/오답 스타일 */
+  .opt.correct{border-color:var(--correct)!important;background:var(--correct-bg)!important;color:var(--correct)!important;font-weight:600;}
+  .opt.wrong{border-color:var(--wrong)!important;background:var(--wrong-bg)!important;color:var(--wrong)!important;}
+  .opt.correct-answer{border-color:var(--correct)!important;background:var(--correct-bg)!important;color:var(--correct)!important;font-weight:600;}
+
+  .quiz-feedback{border-radius:14px;padding:18px 20px;margin-bottom:24px;animation:fadeUp .3s ease both;}
+  .quiz-feedback.correct{background:var(--correct-bg);border:1.5px solid var(--correct);}
+  .quiz-feedback.wrong{background:var(--wrong-bg);border:1.5px solid var(--wrong);}
+  .quiz-feedback-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+  .quiz-feedback-icon{font-size:22px;}
+  .quiz-feedback-title{font-family:'Gowun Batang',serif;font-size:18px;font-weight:700;}
+  .quiz-feedback.correct .quiz-feedback-title{color:var(--correct);}
+  .quiz-feedback.wrong .quiz-feedback-title{color:var(--wrong);}
+  .quiz-feedback-answer{font-size:13px;color:var(--muted);margin-bottom:8px;}
+  .quiz-feedback-answer strong{color:var(--correct);font-weight:600;}
+  .quiz-feedback-explanation{font-size:14px;line-height:1.75;color:var(--text);}
+
+  /* 퀴즈 결과 요약 */
+  .quiz-score-box{background:linear-gradient(135deg,#f0f8f3,#e8f4ec);border:1.5px solid var(--correct);border-radius:16px;padding:24px;text-align:center;margin-bottom:28px;}
+  .quiz-score-num{font-family:'Gowun Batang',serif;font-size:48px;font-weight:700;color:var(--correct);line-height:1;}
+  .quiz-score-label{font-size:13px;color:var(--muted);margin-top:4px;}
+  .quiz-result-opt{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:10px;margin-bottom:6px;font-size:13.5px;}
+  .quiz-result-opt.correct-answer{background:var(--correct-bg);color:var(--correct);font-weight:600;}
+  .quiz-result-opt.wrong-answer{background:var(--wrong-bg);color:var(--wrong);}
+  .quiz-result-opt.neutral{background:var(--surface2);color:var(--muted);}
+
   .radio{width:20px;height:20px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s;}
   .opt.sel .radio{border-color:var(--terra);background:var(--terra);}
   .radio-inner{width:7px;height:7px;border-radius:50%;background:#fff;opacity:0;transition:opacity .2s;}
   .opt.sel .radio-inner{opacity:1;}
   .checkbox{width:20px;height:20px;border-radius:6px;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s;}
   .opt.sel .checkbox{border-color:var(--terra);background:var(--terra);}
+
   textarea{width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:14px;padding:18px 20px;color:var(--text);font-family:inherit;font-size:14px;font-weight:300;line-height:1.8;resize:none;height:130px;outline:none;transition:border-color .2s;margin-bottom:32px;}
   textarea:focus{border-color:var(--terra);} textarea::placeholder{color:var(--muted2);}
+
   .btn{display:inline-flex;align-items:center;gap:8px;padding:14px 28px;border-radius:50px;font-family:inherit;font-size:14.5px;font-weight:500;cursor:pointer;transition:all .2s;border:none;}
   .btn-primary{background:var(--terra);color:#fff;box-shadow:0 4px 20px rgba(200,101,42,.22);}
   .btn-primary:hover{background:var(--terra-l);transform:translateY(-1px);box-shadow:0 8px 28px rgba(200,101,42,.3);}
@@ -90,6 +123,7 @@ const css = `
   .btn-gold:hover{transform:translateY(-1px);box-shadow:0 8px 28px rgba(212,149,42,.4);}
   .btn-gold:disabled{opacity:.4;cursor:not-allowed;transform:none;}
   .btn-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+
   .result-block{margin-bottom:30px;padding-bottom:30px;border-bottom:1px solid var(--border2);}
   .result-block:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0;}
   .result-q-no{font-size:11px;color:var(--terra);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;}
@@ -101,12 +135,14 @@ const css = `
   .bar-fill{height:100%;border-radius:6px;background:var(--terra-l);transition:width .9s cubic-bezier(.16,1,.3,1);}
   .bar-fill.mine{background:var(--terra);}
   .text-bubble{background:var(--surface2);border-left:3px solid var(--terra);border-radius:0 12px 12px 0;padding:16px 18px;font-size:14px;color:var(--text);line-height:1.8;font-style:italic;}
+
   .lottery-banner{background:linear-gradient(135deg,#fffbef,#fff4d6);border:1.5px solid var(--gold);border-radius:16px;padding:20px 22px;margin-bottom:32px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:box-shadow .2s;}
   .lottery-banner:hover{box-shadow:0 4px 20px rgba(212,149,42,.2);}
   .lottery-banner-icon{font-size:28px;flex-shrink:0;}
   .lottery-banner-text{flex:1;}
   .lottery-banner-title{font-size:13px;font-weight:600;color:var(--gold);margin-bottom:3px;}
   .lottery-banner-desc{font-size:12px;color:var(--muted);line-height:1.5;}
+
   .scratch-area{width:100%;max-width:320px;margin:0 auto 32px;aspect-ratio:1.8;border-radius:20px;position:relative;overflow:hidden;cursor:pointer;user-select:none;}
   .scratch-cover{position:absolute;inset:0;background:linear-gradient(135deg,#d4a843,#e8c060,#c8952a);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;border-radius:20px;transition:opacity .6s,transform .6s;z-index:2;}
   .scratch-cover.revealed{opacity:0;transform:scale(1.05);pointer-events:none;}
@@ -122,6 +158,7 @@ const css = `
   .scratch-result-sub{font-size:13px;color:var(--muted);}
   @keyframes popIn{from{opacity:0;transform:scale(0.5);}to{opacity:1;transform:scale(1);}}
   .confetti{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:999;}
+
   .winner-form{background:linear-gradient(135deg,#fffbef,#fff4d6);border:1.5px solid var(--gold);border-radius:18px;padding:28px 24px;margin-top:24px;animation:fadeUp .4s ease both;}
   .winner-form-title{font-family:'Gowun Batang',serif;font-size:18px;font-weight:700;color:var(--text);margin-bottom:6px;}
   .winner-form-sub{font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.6;}
@@ -130,6 +167,7 @@ const css = `
   .form-input{width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;color:var(--text);font-family:inherit;font-size:14px;outline:none;transition:border-color .2s;}
   .form-input:focus{border-color:var(--gold);}
   .prize-badge{display:inline-flex;align-items:center;gap:6px;background:var(--gold-bg);border:1px solid var(--gold);border-radius:50px;padding:6px 14px;font-size:13px;font-weight:600;color:var(--gold);margin-bottom:20px;}
+
   .co-header{text-align:center;margin-bottom:32px;}
   .co-name{font-family:'Gowun Batang',serif;font-size:36px;font-weight:700;color:var(--terra);margin-bottom:6px;}
   .co-tag{font-size:13px;color:var(--muted);letter-spacing:.5px;}
@@ -141,8 +179,10 @@ const css = `
   .feat-desc{font-size:12px;color:var(--muted);line-height:1.5;}
   .cta-wrap{background:linear-gradient(135deg,#fdeee0,#fdf4e8);border:1.5px solid var(--terra);border-radius:18px;padding:28px 24px;text-align:center;}
   .cta-contact{font-size:13px;color:var(--muted);margin-top:14px;line-height:1.8;}
+
   .divider{height:1px;background:var(--border2);margin:24px 0;}
   .hint{font-size:12px;color:var(--muted2);margin-top:-16px;margin-bottom:20px;}
+
   .admin-btn{position:absolute;top:20px;right:20px;padding:8px 14px;border-radius:50px;font-size:12px;font-weight:500;background:var(--surface2);border:1px solid var(--border);color:var(--muted);cursor:pointer;transition:all .2s;font-family:inherit;}
   .admin-btn:hover{border-color:var(--terra);color:var(--terra);}
   .pw-overlay{position:fixed;inset:0;background:rgba(45,31,20,0.5);display:flex;align-items:center;justify-content:center;z-index:100;}
@@ -153,6 +193,7 @@ const css = `
   .pw-input:focus{border-color:var(--terra);}
   .pw-error{font-size:12px;color:#c04040;margin-bottom:12px;height:16px;}
   .pw-row{display:flex;gap:8px;}
+
   .edit-section{margin-bottom:28px;}
   .edit-q-card{background:var(--surface2);border:1px solid var(--border2);border-radius:16px;padding:20px 20px 16px;margin-bottom:14px;position:relative;}
   .edit-field{width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-family:inherit;font-size:13.5px;outline:none;transition:border-color .2s;margin-bottom:8px;resize:none;}
@@ -161,12 +202,17 @@ const css = `
   .type-select{background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);font-family:inherit;font-size:13px;outline:none;margin-bottom:10px;width:100%;cursor:pointer;}
   .opt-input-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
   .opt-input{flex:1;background:var(--surface);border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-family:inherit;font-size:13px;outline:none;transition:border-color .2s;}
+  .opt-input:focus{border-color:var(--terra);}
+  .correct-mark{width:30px;height:30px;border-radius:8px;border:1.5px solid var(--border);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .2s;flex-shrink:0;}
+  .correct-mark.active{background:var(--correct-bg);border-color:var(--correct);}
   .icon-btn{width:30px;height:30px;border-radius:8px;border:1px solid var(--border);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:14px;transition:all .2s;flex-shrink:0;}
   .icon-btn:hover{background:#fde8e8;border-color:#e07070;color:#c04040;}
   .del-q-btn{position:absolute;top:14px;right:14px;padding:5px 12px;border-radius:50px;font-size:11px;font-weight:500;background:transparent;border:1px solid var(--border);color:var(--muted);cursor:pointer;font-family:inherit;transition:all .2s;}
   .del-q-btn:hover{background:#fde8e8;border-color:#e07070;color:#c04040;}
   .q-num{font-size:11px;font-weight:600;color:var(--terra);letter-spacing:1.5px;margin-bottom:10px;}
   .section-title{font-size:13px;font-weight:600;color:var(--terra);margin-bottom:12px;letter-spacing:1px;}
+  .quiz-type-badge{display:inline-flex;align-items:center;gap:4px;background:#e8f4ec;border:1px solid var(--correct);border-radius:50px;padding:3px 10px;font-size:11px;font-weight:600;color:var(--correct);margin-left:8px;vertical-align:middle;}
+
   .toggle-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
   .toggle{width:44px;height:24px;border-radius:12px;background:var(--border);border:none;cursor:pointer;position:relative;transition:background .2s;flex-shrink:0;}
   .toggle.on{background:var(--sage);}
@@ -175,6 +221,7 @@ const css = `
   .prob-row{display:flex;align-items:center;gap:12px;margin-bottom:8px;}
   .prob-input{width:80px;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-family:inherit;font-size:14px;outline:none;text-align:center;}
   .prob-input:focus{border-color:var(--gold);}
+
   .loading{display:flex;align-items:center;justify-content:center;gap:10px;color:var(--muted);font-size:14px;padding:40px 0;}
   .spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--terra);border-radius:50%;animation:spin .7s linear infinite;}
   @keyframes spin{to{transform:rotate(360deg);}}
@@ -200,6 +247,7 @@ export default function App() {
   const [phase,setPhase]           = useState("loading");
   const [step,setStep]             = useState(0);
   const [answers,setAnswers]       = useState({});
+  const [quizRevealed,setQuizRevealed] = useState({}); // 퀴즈 해설 표시 여부
   const [barW,setBarW]             = useState({});
   const [questions,setQuestions]   = useState(QUESTIONS_DEFAULT);
   const [company,setCompany]       = useState(COMPANY_DEFAULT);
@@ -235,9 +283,33 @@ export default function App() {
   const setSingle=(opt)=>setAnswers(p=>({...p,[q.id]:opt}));
   const setMultiple=(opt)=>setAnswers(p=>{const cur=p[q.id]||[];return{...p,[q.id]:cur.includes(opt)?cur.filter(x=>x!==opt):[...cur,opt]};});
   const setText=(v)=>setAnswers(p=>({...p,[q.id]:v}));
-  const canNext=()=>{const a=answers[q?.id];if(!q)return false;if(q.type==="single")return!!a;if(q.type==="multiple")return a&&a.length>0;if(q.type==="text")return a&&a.trim().length>0;return false;};
 
-  const calcBars=(s,qs)=>{const w={};qs.forEach(question=>{if(question.type==="text")return;const data=s[question.id]||{};const tot=Object.values(data).reduce((a,b)=>a+b,0);w[question.id]={};(question.options||[]).forEach(opt=>{w[question.id][opt]=tot>0?Math.round(((data[opt]||0)/tot)*100):0;});});return w;};
+  // 퀴즈 선택 → 즉시 해설 공개
+  const setQuiz=(opt)=>{
+    if(quizRevealed[q.id]) return; // 이미 공개된 경우 변경 불가
+    setAnswers(p=>({...p,[q.id]:opt}));
+    setQuizRevealed(p=>({...p,[q.id]:true}));
+  };
+
+  const canNext=()=>{
+    const a=answers[q?.id];
+    if(!q)return false;
+    if(q.type==="single")  return !!a;
+    if(q.type==="multiple")return a&&a.length>0;
+    if(q.type==="text")    return a&&a.trim().length>0;
+    if(q.type==="quiz")    return quizRevealed[q.id]; // 퀴즈는 선택 후 해설 확인해야 넘어갈 수 있음
+    return false;
+  };
+
+  const calcBars=(s,qs)=>{const w={};qs.forEach(question=>{if(question.type==="text"||question.type==="quiz")return;const data=s[question.id]||{};const tot=Object.values(data).reduce((a,b)=>a+b,0);w[question.id]={};(question.options||[]).forEach(opt=>{w[question.id][opt]=tot>0?Math.round(((data[opt]||0)/tot)*100):0;});});return w;};
+
+  // 퀴즈 점수 계산
+  const calcQuizScore=()=>{
+    const quizQs=questions.filter(q=>q.type==="quiz");
+    if(quizQs.length===0)return null;
+    const correct=quizQs.filter(q=>answers[q.id]===q.correctAnswer).length;
+    return{correct,total:quizQs.length};
+  };
 
   const next=async()=>{
     if(step<total-1){setStep(s=>s+1);animate();return;}
@@ -270,10 +342,19 @@ export default function App() {
   const updateOpt=(qi,oi,v)=>{const qs=[...editQ];const o=[...qs[qi].options];o[oi]=v;qs[qi]={...qs[qi],options:o};setEditQ(qs);};
   const addOpt=(qi)=>{const qs=[...editQ];qs[qi]={...qs[qi],options:[...(qs[qi].options||[]),"새 선택지"]};setEditQ(qs);};
   const delOpt=(qi,oi)=>{const qs=[...editQ];qs[qi]={...qs[qi],options:qs[qi].options.filter((_,i)=>i!==oi)};setEditQ(qs);};
-  const changeType=(qi,type)=>{const qs=[...editQ];const base={id:qs[qi].id,type,question:qs[qi].question,placeholder:qs[qi].placeholder};if(type!=="text")base.options=qs[qi].options||["선택지 1","선택지 2"];qs[qi]=base;setEditQ(qs);};
+  const changeType=(qi,type)=>{
+    const qs=[...editQ];
+    const base={id:qs[qi].id,type,question:qs[qi].question};
+    if(type==="text"){base.placeholder=qs[qi].placeholder||"";}
+    else if(type==="quiz"){base.options=qs[qi].options||["선택지 1","선택지 2","선택지 3","선택지 4"];base.correctAnswer=qs[qi].correctAnswer||"선택지 1";base.explanation=qs[qi].explanation||"";}
+    else{base.options=qs[qi].options||["선택지 1","선택지 2"];}
+    qs[qi]=base; setEditQ(qs);
+  };
   const addQuestion=()=>{const newId=Math.max(...editQ.map(q=>q.id),0)+1;setEditQ([...editQ,{id:newId,type:"single",question:"새 질문을 입력하세요",options:["선택지 1","선택지 2"]}]);};
   const delQuestion=(i)=>{if(editQ.length>1)setEditQ(editQ.filter((_,idx)=>idx!==i));};
   const saveAdmin=async()=>{setSaving(true);try{await apiPost("saveConfig",{questions:editQ,company:editCo,intro:editIntro,lottery:editLottery});}catch{}setQuestions(editQ);setCompany(editCo);setIntro(editIntro);setLottery(editLottery);setSaving(false);go("intro");};
+
+  const score=calcQuizScore();
 
   return (
     <>
@@ -320,7 +401,7 @@ export default function App() {
                   </div>
                 ))}
               </div>
-              <button className="btn btn-primary" onClick={()=>{setAnswers({});setStep(0);go("survey");}}>{intro.btnText} <Arrow/></button>
+              <button className="btn btn-primary" onClick={()=>{setAnswers({});setQuizRevealed({});setStep(0);go("survey");}}>{intro.btnText} <Arrow/></button>
             </>
           )}
 
@@ -330,11 +411,63 @@ export default function App() {
                 <div className="progress-dots">{questions.map((_,i)=><div key={i} className={`dot ${i<step?"done":i===step?"active":""}`}/>)}</div>
                 <span className="progress-label">{step+1} / {total}</span>
               </div>
-              <div className="eyebrow">질문 {step+1}</div>
+
+              <div className="eyebrow">
+                {q.type==="quiz" ? <>퀴즈 {step+1}<span className="quiz-type-badge">🧠 퀴즈</span></> : `질문 ${step+1}`}
+              </div>
               <h2>{q.question}</h2>
+
+              {/* 일반 단일 선택 */}
               {q.type==="single" && <div className="options">{q.options.map(opt=><button key={opt} className={`opt ${answers[q.id]===opt?"sel":""}`} onClick={()=>setSingle(opt)}><span className="radio"><span className="radio-inner"/></span>{opt}</button>)}</div>}
+
+              {/* 복수 선택 */}
               {q.type==="multiple" && (<><p className="hint">복수 선택 가능합니다</p><div className="options">{q.options.map(opt=>{const sel=(answers[q.id]||[]).includes(opt);return<button key={opt} className={`opt ${sel?"sel":""}`} onClick={()=>setMultiple(opt)}><span className="checkbox">{sel&&<Check/>}</span>{opt}</button>;})}</div></>)}
+
+              {/* 주관식 */}
               {q.type==="text" && <textarea placeholder={q.placeholder||"자유롭게 작성해 주세요..."} value={answers[q.id]||""} onChange={e=>setText(e.target.value)}/>}
+
+              {/* 퀴즈형 */}
+              {q.type==="quiz" && (
+                <>
+                  <div className="options">
+                    {q.options.map(opt=>{
+                      const isSelected=answers[q.id]===opt;
+                      const isCorrect=opt===q.correctAnswer;
+                      const showResult=quizRevealed[q.id];
+                      let cls="opt";
+                      if(showResult){
+                        if(isCorrect) cls+=" correct-answer";
+                        else if(isSelected&&!isCorrect) cls+=" wrong";
+                      } else if(isSelected) cls+=" sel";
+                      return(
+                        <button key={opt} className={cls} onClick={()=>setQuiz(opt)} disabled={showResult}>
+                          <span className="radio"><span className="radio-inner"/></span>
+                          {opt}
+                          {showResult&&isCorrect&&<span style={{marginLeft:"auto",fontSize:"16px"}}>✅</span>}
+                          {showResult&&isSelected&&!isCorrect&&<span style={{marginLeft:"auto",fontSize:"16px"}}>❌</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* 즉시 해설 표시 */}
+                  {quizRevealed[q.id] && (
+                    <div className={`quiz-feedback ${answers[q.id]===q.correctAnswer?"correct":"wrong"}`}>
+                      <div className="quiz-feedback-header">
+                        <span className="quiz-feedback-icon">{answers[q.id]===q.correctAnswer?"🎉":"😅"}</span>
+                        <span className="quiz-feedback-title">{answers[q.id]===q.correctAnswer?"정답입니다!":"오답입니다"}</span>
+                      </div>
+                      {answers[q.id]!==q.correctAnswer&&(
+                        <div className="quiz-feedback-answer">정답: <strong>{q.correctAnswer}</strong></div>
+                      )}
+                      {q.explanation&&<div className="quiz-feedback-explanation">💡 {q.explanation}</div>}
+                    </div>
+                  )}
+
+                  {!quizRevealed[q.id]&&<p className="hint" style={{marginBottom:"24px"}}>선택지를 클릭하면 즉시 정답을 확인할 수 있어요</p>}
+                </>
+              )}
+
               <div className="btn-row">
                 {step>0&&<button className="btn btn-ghost" onClick={prev}>← 이전</button>}
                 <button className="btn btn-primary" onClick={next} disabled={!canNext()}>{step===total-1?"결과 보기":"다음"} <Arrow/></button>
@@ -344,9 +477,18 @@ export default function App() {
 
           {phase==="results" && (
             <>
-              <div className="eyebrow">응답 완료 🎉</div>
-              <h1>설문 결과</h1>
-              <p className="subtitle" style={{marginBottom:"28px"}}>참여해 주셔서 감사합니다.<br/>전체 응답 통계와 귀하의 응답을 함께 보여드립니다.</p>
+              <div className="eyebrow">완료 🎉</div>
+              <h1>결과 보기</h1>
+              <p className="subtitle" style={{marginBottom:"28px"}}>참여해 주셔서 감사합니다!</p>
+
+              {/* 퀴즈 점수 요약 */}
+              {score && (
+                <div className="quiz-score-box">
+                  <div className="quiz-score-num">{score.correct}<span style={{fontSize:"24px",color:"var(--muted)"}}>/{score.total}</span></div>
+                  <div className="quiz-score-label">퀴즈 점수 · {Math.round(score.correct/score.total*100)}점</div>
+                </div>
+              )}
+
               {lottery.enabled && (
                 <div className="lottery-banner" onClick={()=>go("lottery")}>
                   <div className="lottery-banner-icon">🎰</div>
@@ -356,12 +498,39 @@ export default function App() {
                   </div>
                 </div>
               )}
+
               {questions.map(question=>(
                 <div className="result-block" key={question.id}>
-                  <div className="result-q-no">Q{question.id}</div>
+                  <div className="result-q-no">
+                    {question.type==="quiz" ? <>Q{question.id} <span className="quiz-type-badge">🧠 퀴즈</span></> : `Q${question.id}`}
+                  </div>
                   <div className="result-q-text">{question.question}</div>
-                  {question.type==="text"?<div className="text-bubble">{answers[question.id]||"(응답 없음)"}</div>:
-                    question.options.map(opt=>{const pct=barW[question.id]?.[opt]??0;const mine=question.type==="multiple"?(answers[question.id]||[]).includes(opt):answers[question.id]===opt;return<div className="bar-row" key={opt}><div className={`bar-meta ${mine?"mine":""}`}><span>{mine?"✔ ":""}{opt}</span><span>{pct}%</span></div><div className="bar-track"><div className={`bar-fill ${mine?"mine":""}`} style={{width:`${pct}%`}}/></div></div>;})}
+
+                  {/* 퀴즈 결과 */}
+                  {question.type==="quiz" && (
+                    <>
+                      {question.options.map(opt=>{
+                        const isCorrect=opt===question.correctAnswer;
+                        const isMine=answers[question.id]===opt;
+                        let cls="quiz-result-opt";
+                        if(isCorrect) cls+=" correct-answer";
+                        else if(isMine) cls+=" wrong-answer";
+                        else cls+=" neutral";
+                        return(
+                          <div key={opt} className={cls}>
+                            <span>{isCorrect?"✅":isMine?"❌":"　"}</span>
+                            <span>{opt}</span>
+                            {isCorrect&&<span style={{marginLeft:"auto",fontSize:"12px",fontWeight:600}}>정답</span>}
+                          </div>
+                        );
+                      })}
+                      {question.explanation&&<div style={{marginTop:"12px",background:"var(--surface2)",borderLeft:"3px solid var(--correct)",borderRadius:"0 10px 10px 0",padding:"12px 16px",fontSize:"13px",color:"var(--text)",lineHeight:"1.7"}}>💡 {question.explanation}</div>}
+                    </>
+                  )}
+
+                  {/* 설문 결과 */}
+                  {question.type==="text"&&<div className="text-bubble">{answers[question.id]||"(응답 없음)"}</div>}
+                  {(question.type==="single"||question.type==="multiple")&&question.options.map(opt=>{const pct=barW[question.id]?.[opt]??0;const mine=question.type==="multiple"?(answers[question.id]||[]).includes(opt):answers[question.id]===opt;return<div className="bar-row" key={opt}><div className={`bar-meta ${mine?"mine":""}`}><span>{mine?"✔ ":""}{opt}</span><span>{pct}%</span></div><div className="bar-track"><div className={`bar-fill ${mine?"mine":""}`} style={{width:`${pct}%`}}/></div></div>;})}
                 </div>
               ))}
               <button className="btn btn-primary" style={{width:"100%",justifyContent:"center"}} onClick={()=>go("company")}>저희 센터 서비스 알아보기 <Arrow/></button>
@@ -385,8 +554,7 @@ export default function App() {
                     <div className="scratch-cover-sub">클릭해서 확인하기</div>
                   </div>
                 </div>
-
-                {revealed && isWinner && !winSaved && (
+                {revealed&&isWinner&&!winSaved&&(
                   <div className="winner-form">
                     <div className="winner-form-title">🎊 축하드려요!</div>
                     <div className="winner-form-sub">연락처를 남겨주시면 선물을 보내드릴게요.<br/>매월 말 당첨자에게 연락드립니다.</div>
@@ -396,8 +564,7 @@ export default function App() {
                     <button className="btn btn-gold" style={{width:"100%",justifyContent:"center",marginTop:"8px"}} onClick={saveWinner} disabled={!winName.trim()||!winContact.trim()}>연락처 제출하기 <Arrow/></button>
                   </div>
                 )}
-
-                {revealed && isWinner && winSaved && (
+                {revealed&&isWinner&&winSaved&&(
                   <div style={{textAlign:"center",padding:"24px",background:"var(--gold-bg)",border:"1px solid var(--gold)",borderRadius:"16px",marginTop:"20px"}}>
                     <div style={{fontSize:"36px",marginBottom:"10px"}}>✅</div>
                     <div style={{fontFamily:"'Gowun Batang',serif",fontSize:"18px",fontWeight:700,marginBottom:"6px"}}>제출 완료!</div>
@@ -405,7 +572,6 @@ export default function App() {
                   </div>
                 )}
               </div>
-
               <div className="divider"/>
               <div style={{display:"flex",gap:"10px"}}>
                 <button className="btn btn-ghost" style={{flex:1,justifyContent:"center"}} onClick={()=>go("results")}>← 결과로</button>
@@ -424,40 +590,36 @@ export default function App() {
                 <p className="cta-contact">{company.contact}</p>
               </div>
               <div className="divider"/>
-              <div style={{textAlign:"center"}}><button className="btn btn-ghost" style={{fontSize:"13px"}} onClick={()=>{setAnswers({});setStep(0);go("intro");}}>설문 다시 하기</button></div>
+              <div style={{textAlign:"center"}}><button className="btn btn-ghost" style={{fontSize:"13px"}} onClick={()=>{setAnswers({});setQuizRevealed({});setStep(0);go("intro");}}>다시 시작하기</button></div>
             </>
           )}
 
+          {/* ── ADMIN ── */}
           {phase==="admin" && editQ && editCo && editIntro && editLottery && (
             <>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"28px"}}>
-                <div style={{fontFamily:"'Gowun Batang',serif",fontSize:"22px",fontWeight:700}}>⚙ 설문 편집</div>
+                <div style={{fontFamily:"'Gowun Batang',serif",fontSize:"22px",fontWeight:700}}>⚙ 편집</div>
                 <button className="btn btn-ghost" style={{fontSize:"12px",padding:"8px 16px"}} onClick={()=>go("intro")}>취소</button>
               </div>
 
+              {/* 추첨 설정 */}
               <div className="edit-section">
                 <div className="section-title">🎁 추첨 설정</div>
                 <div className="toggle-row">
                   <span style={{fontSize:"14px",fontWeight:500}}>즉석 추첨 활성화</span>
                   <button className={`toggle ${editLottery.enabled?"on":""}`} onClick={()=>setEditLottery({...editLottery,enabled:!editLottery.enabled})}/>
                 </div>
-                {editLottery.enabled && (
-                  <>
-                    <div className="edit-label">당첨 확률</div>
-                    <div className="prob-row">
-                      <input className="prob-input" type="number" min="1" max="100" value={editLottery.probability} onChange={e=>setEditLottery({...editLottery,probability:Number(e.target.value)})}/>
-                      <span style={{fontSize:"13px",color:"var(--muted)"}}>% (예: 10 = 10명 중 1명)</span>
-                    </div>
-                    <div className="edit-label">상품명</div>
-                    <input className="edit-field" value={editLottery.prize} onChange={e=>setEditLottery({...editLottery,prize:e.target.value})}/>
-                    <div className="edit-label">추첨 안내 문구</div>
-                    <input className="edit-field" value={editLottery.description} onChange={e=>setEditLottery({...editLottery,description:e.target.value})}/>
-                  </>
-                )}
+                {editLottery.enabled&&(<>
+                  <div className="edit-label">당첨 확률</div>
+                  <div className="prob-row"><input className="prob-input" type="number" min="1" max="100" value={editLottery.probability} onChange={e=>setEditLottery({...editLottery,probability:Number(e.target.value)})}/><span style={{fontSize:"13px",color:"var(--muted)"}}>% (예: 10 = 10명 중 1명)</span></div>
+                  <div className="edit-label">상품명</div><input className="edit-field" value={editLottery.prize} onChange={e=>setEditLottery({...editLottery,prize:e.target.value})}/>
+                  <div className="edit-label">추첨 안내 문구</div><input className="edit-field" value={editLottery.description} onChange={e=>setEditLottery({...editLottery,description:e.target.value})}/>
+                </>)}
               </div>
 
               <div className="divider"/>
 
+              {/* 메인 페이지 */}
               <div className="edit-section">
                 <div className="section-title">🏠 메인 페이지</div>
                 <div className="edit-label">상단 라벨</div><input className="edit-field" value={editIntro.eyebrow} onChange={e=>setEditIntro({...editIntro,eyebrow:e.target.value})}/>
@@ -472,6 +634,7 @@ export default function App() {
 
               <div className="divider"/>
 
+              {/* 센터 정보 */}
               <div className="edit-section">
                 <div className="section-title">🏢 센터 정보</div>
                 <div className="edit-label">센터명</div><input className="edit-field" value={editCo.name} onChange={e=>setEditCo({...editCo,name:e.target.value})}/>
@@ -483,24 +646,59 @@ export default function App() {
 
               <div className="divider"/>
 
+              {/* 문항 편집 */}
               <div className="edit-section">
-                <div className="section-title">📋 설문 문항 ({editQ.length}개)</div>
+                <div className="section-title">📋 문항 ({editQ.length}개)</div>
                 {editQ.map((eq,qi)=>(
                   <div className="edit-q-card" key={eq.id}>
-                    <div className="q-num">질문 {qi+1}</div>
+                    <div className="q-num">문항 {qi+1} {eq.type==="quiz"&&<span className="quiz-type-badge">🧠 퀴즈</span>}</div>
                     <button className="del-q-btn" onClick={()=>delQuestion(qi)}>삭제</button>
-                    <div className="edit-label">질문 내용</div>
+                    <div className="edit-label">문항 내용</div>
                     <textarea className="edit-field" style={{height:"72px"}} value={eq.question} onChange={e=>updateQ(qi,"question",e.target.value)}/>
-                    <div className="edit-label">문항 형식</div>
+                    <div className="edit-label">유형</div>
                     <select className="type-select" value={eq.type} onChange={e=>changeType(qi,e.target.value)}>
                       <option value="single">객관식 (단일 선택)</option>
                       <option value="multiple">객관식 (복수 선택)</option>
                       <option value="text">주관식 (텍스트)</option>
+                      <option value="quiz">🧠 퀴즈형 (정답+해설)</option>
                     </select>
-                    {eq.type==="text"?(<><div className="edit-label">안내 문구</div><input className="edit-field" value={eq.placeholder||""} onChange={e=>updateQ(qi,"placeholder",e.target.value)}/></>):(<><div className="edit-label">선택지</div>{(eq.options||[]).map((opt,oi)=><div className="opt-input-row" key={oi}><input className="opt-input" value={opt} onChange={e=>updateOpt(qi,oi,e.target.value)}/><button className="icon-btn" onClick={()=>delOpt(qi,oi)}>×</button></div>)}<button className="btn btn-ghost" style={{fontSize:"12px",padding:"7px 14px",marginTop:"4px"}} onClick={()=>addOpt(qi)}>+ 선택지 추가</button></>)}
+
+                    {eq.type==="text"&&(<><div className="edit-label">안내 문구</div><input className="edit-field" value={eq.placeholder||""} onChange={e=>updateQ(qi,"placeholder",e.target.value)}/></>)}
+
+                    {(eq.type==="single"||eq.type==="multiple")&&(<>
+                      <div className="edit-label">선택지</div>
+                      {(eq.options||[]).map((opt,oi)=><div className="opt-input-row" key={oi}><input className="opt-input" value={opt} onChange={e=>updateOpt(qi,oi,e.target.value)}/><button className="icon-btn" onClick={()=>delOpt(qi,oi)}>×</button></div>)}
+                      <button className="btn btn-ghost" style={{fontSize:"12px",padding:"7px 14px",marginTop:"4px"}} onClick={()=>addOpt(qi)}>+ 선택지 추가</button>
+                    </>)}
+
+                    {/* 퀴즈형 편집 */}
+                    {eq.type==="quiz"&&(<>
+                      <div className="edit-label">선택지 &amp; 정답 설정 (✅ 클릭 = 정답)</div>
+                      {(eq.options||[]).map((opt,oi)=>(
+                        <div className="opt-input-row" key={oi}>
+                          <button
+                            className={`correct-mark ${eq.correctAnswer===opt?"active":""}`}
+                            onClick={()=>updateQ(qi,"correctAnswer",opt)}
+                            title="정답으로 설정"
+                          >✅</button>
+                          <input className="opt-input" value={opt} onChange={e=>{
+                            const oldVal=eq.options[oi];
+                            updateOpt(qi,oi,e.target.value);
+                            // 정답이 이 선택지였으면 새 값으로 업데이트
+                            if(eq.correctAnswer===oldVal){
+                              const qs=[...editQ];qs[qi]={...qs[qi],correctAnswer:e.target.value};setEditQ(qs);
+                            }
+                          }}/>
+                          <button className="icon-btn" onClick={()=>delOpt(qi,oi)}>×</button>
+                        </div>
+                      ))}
+                      <button className="btn btn-ghost" style={{fontSize:"12px",padding:"7px 14px",marginTop:"4px"}} onClick={()=>addOpt(qi)}>+ 선택지 추가</button>
+                      <div className="edit-label">해설 (정답 제출 후 표시)</div>
+                      <textarea className="edit-field" style={{height:"80px"}} placeholder="예: 사회복지사업법 제2조에 의거하여..." value={eq.explanation||""} onChange={e=>updateQ(qi,"explanation",e.target.value)}/>
+                    </>)}
                   </div>
                 ))}
-                <button className="btn btn-ghost" style={{width:"100%",justifyContent:"center",marginTop:"4px"}} onClick={addQuestion}>+ 질문 추가</button>
+                <button className="btn btn-ghost" style={{width:"100%",justifyContent:"center",marginTop:"4px"}} onClick={addQuestion}>+ 문항 추가</button>
               </div>
 
               <div className="divider"/>
