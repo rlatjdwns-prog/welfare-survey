@@ -3,16 +3,16 @@ import { useState, useEffect, useRef } from "react";
 const API_URL = "https://script.google.com/macros/s/AKfycbyPvgRzt6h6u98fldO9leSD8hblCn_0mk6XkcASZl0DaCwWJV276elhMlKGrLRfK7MJRA/exec";
 
 const INTRO_DEFAULT = {
-  eyebrow: "복지 서비스 욕구조사",
-  title: "안녕하세요,\n여러분의 이야기를\n들을게요 🌿",
+  eyebrow: "서울 동행 동료지원센터 ",
+  title: "안녕하세요,\n서울동행동료지원센터\n입니다. 🌿",
   subtitle: "몇 가지 간단한 질문에 답해주시면\n더 나은 서비스를 제공하는 데 큰 도움이 됩니다.\n소요 시간은 약 3~5분입니다.",
   badge1: "익명 보장", badge2: "즉시 결과", btnText: "설문 참여하기",
 };
 
 const COMPANY_DEFAULT = {
   name: "서울동행동료지원센터",
-  tagline: "당신 곁에 함께하는 사회복지 서비스",
-  description: "저희 센터는 지역사회 구성원 모두가 존엄하고 행복한 삶을 누릴 수 있도록 맞춤형 복지 서비스를 제공합니다.",
+  tagline: "#동료지원 #자립지원 #권익옹호 #특화사업",
+  description: "센터 소개",
   features: [
     { icon: "🤝", title: "동료 지원", desc: "동료 상담 · 동료지원인 교육" },
     { icon: "💛", title: "자립 지원", desc: "1:1 자립 지원 · 자조모임 운영" },
