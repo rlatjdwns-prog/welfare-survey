@@ -235,6 +235,16 @@ const css = `
   .admin-btn { position: absolute; top: 20px; right: 20px; padding: 8px 14px; border-radius: 50px; font-size: 12px; font-weight: 500; background: var(--surface2); border: 1px solid var(--border); color: var(--muted); cursor: pointer; transition: all .2s; font-family: inherit; }
   .admin-btn:hover { border-color: var(--terra); color: var(--terra); }
 
+  .pw-overlay { position: fixed; inset: 0; background: rgba(45,31,20,0.5); display: flex; align-items: center; justify-content: center; z-index: 100; animation: fadeUp .2s ease both; }
+  .pw-box { background: var(--surface); border: 1px solid var(--border2); border-radius: 20px; padding: 36px 32px; width: 300px; box-shadow: 0 8px 48px rgba(180,120,60,0.2); text-align: center; }
+  .pw-title { font-family: 'Gowun Batang', serif; font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+  .pw-sub { font-size: 13px; color: var(--muted); margin-bottom: 20px; }
+  .pw-input { width: 100%; background: var(--surface2); border: 1.5px solid var(--border); border-radius: 10px; padding: 12px 16px; color: var(--text); font-family: inherit; font-size: 18px; letter-spacing: 6px; outline: none; text-align: center; transition: border-color .2s; margin-bottom: 8px; }
+  .pw-input:focus { border-color: var(--terra); }
+  .pw-error { font-size: 12px; color: #c04040; margin-bottom: 12px; height: 16px; }
+  .pw-row { display: flex; gap: 8px; }
+
+
   .edit-section { margin-bottom: 28px; }
   .edit-q-card { background: var(--surface2); border: 1px solid var(--border2); border-radius: 16px; padding: 20px 20px 16px; margin-bottom: 14px; position: relative; }
   .edit-field { width: 100%; background: var(--surface); border: 1.5px solid var(--border); border-radius: 10px; padding: 11px 14px; color: var(--text); font-family: inherit; font-size: 13.5px; outline: none; transition: border-color .2s; margin-bottom: 8px; resize: none; }
@@ -300,6 +310,16 @@ export default function App() {
   const [editCo, setEditCo]       = useState(null);
   const [editIntro, setEditIntro] = useState(null);
   const cardRef = useRef(null);
+
+  const [pwOpen, setPwOpen]   = useState(false);
+  const [pwValue, setPwValue] = useState("");
+  const [pwError, setPwError] = useState(false);
+
+  const handleAdminClick = () => { setPwOpen(true); setPwValue(""); setPwError(false); };
+  const handlePwSubmit = () => {
+    if (pwValue === "0723") { setPwOpen(false); openAdmin(); }
+    else { setPwError(true); setPwValue(""); }
+  };
 
   const q     = questions[step];
   const total = questions.length;
@@ -457,10 +477,35 @@ export default function App() {
             </div>
           )}
 
+          {/* 비밀번호 모달 */}
+          {pwOpen && (
+            <div className="pw-overlay" onClick={() => setPwOpen(false)}>
+              <div className="pw-box" onClick={e => e.stopPropagation()}>
+                <div className="pw-title">🔒 관리자 확인</div>
+                <div className="pw-sub">비밀번호를 입력해주세요</div>
+                <input
+                  className="pw-input"
+                  type="password"
+                  maxLength={6}
+                  value={pwValue}
+                  onChange={e => { setPwValue(e.target.value); setPwError(false); }}
+                  onKeyDown={e => e.key === "Enter" && handlePwSubmit()}
+                  autoFocus
+                  placeholder="••••"
+                />
+                <div className="pw-error">{pwError ? "비밀번호가 틀렸습니다" : ""}</div>
+                <div className="pw-row">
+                  <button className="btn btn-ghost" style={{ flex: 1, justifyContent: "center" }} onClick={() => setPwOpen(false)}>취소</button>
+                  <button className="btn btn-primary" style={{ flex: 1, justifyContent: "center" }} onClick={handlePwSubmit}>확인</button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* INTRO */}
           {phase === "intro" && (
             <>
-              <button className="admin-btn" onClick={openAdmin}>⚙ 편집</button>
+              <button className="admin-btn" onClick={handleAdminClick}>⚙ 편집</button>
               <div className="eyebrow">{intro.eyebrow}</div>
               <h1>{intro.title.split("\n").map((l, i, a) => <span key={i}>{l}{i < a.length-1 && <br/>}</span>)}</h1>
               <p className="subtitle">
