@@ -586,7 +586,7 @@ export default function App() {
               <p style={{fontSize:"15px",color:"var(--muted)",lineHeight:"1.85",marginBottom:"28px",fontWeight:300}}>{company.description}</p>
               <div className="feat-grid">{company.features.map(f=><div className="feat-card" key={f.title}><div className="feat-icon">{f.icon}</div><div className="feat-title">{f.title}</div><div className="feat-desc">{f.desc}</div></div>)}</div>
               <div className="cta-wrap">
-                <button className="btn btn-primary" style={{width:"100%",justifyContent:"center"}}>{company.cta} <Arrow/></button>
+                <button className="btn btn-primary" style={{width:"100%",justifyContent:"center"}} onClick={()=>window.open("https://www.mmdcil.or.kr/","_blank")}>{company.cta} <Arrow/></button>
                 <p className="cta-contact">{company.contact}</p>
               </div>
               <div className="divider"/>
