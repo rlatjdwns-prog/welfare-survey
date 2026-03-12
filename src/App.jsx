@@ -533,7 +533,7 @@ export default function App() {
                   {(question.type==="single"||question.type==="multiple")&&question.options.map(opt=>{const pct=barW[question.id]?.[opt]??0;const mine=question.type==="multiple"?(answers[question.id]||[]).includes(opt):answers[question.id]===opt;return<div className="bar-row" key={opt}><div className={`bar-meta ${mine?"mine":""}`}><span>{mine?"✔ ":""}{opt}</span><span>{pct}%</span></div><div className="bar-track"><div className={`bar-fill ${mine?"mine":""}`} style={{width:`${pct}%`}}/></div></div>;})}
                 </div>
               ))}
-              <button className="btn btn-primary" style={{width:"100%",justifyContent:"center"}} onClick={()=>go("company")}>저희 센터 서비스 알아보기 <Arrow/></button>
+              <button className="btn btn-primary" style={{width:"100%",justifyContent:"center"}} onClick={()=>go("company")}>서동동 센터 서비스 알아보기 <Arrow/></button>
             </>
           )}
 
