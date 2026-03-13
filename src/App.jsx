@@ -31,27 +31,30 @@ const QUESTIONS_DEFAULT = [
   { id:5, type:"quiz", question:"서울동행동료지원센터는 어떤 역할을 하는 곳인가요?", options:["정신질환자를 시설에서 보호하고 관리","당사자 스스로 지역사회에서 살아갈 수 있도록 지원","정신질환 진단과 약물 처방","정신질환자 가족을 위한 교육 전담"], correctAnswer:"당사자 스스로 지역사회에서 살아갈 수 있도록 지원", explanation:"서울동행동료지원센터는 정신질환을 경험한 당사자가 시설이 아닌 지역사회에서 스스로 결정하며 살아갈 수 있도록 동료지원, 자립지원, 권익옹호 활동을 합니다. 당사자의 목소리가 중심이 되는 곳이에요." },
 ];
 
-// 상품별 개별 확률 방식
-// 추첨 로직: 상품 순서대로 각각 독립 확률로 롤 → 처음 당첨된 상품 지급
 const LOTTERY_DEFAULT = {
   enabled: true,
-  maxWinners: 5,
+  maxWinners: 0,
   description: "퀴즈 참여자 중 추첨하여 선물을 드립니다!",
   resetKey: "1",
   prizes: [
-    { id: 1, name: "스타벅스 아메리카노", probability: 10 },
-    { id: 2, name: "편의점 상품권 5,000원", probability: 20 },
+    { id: 1, name: "스타벅스 아메리카노", probability: 10, stock: 3 },
+    { id: 2, name: "편의점 상품권 5,000원", probability: 20, stock: 5 },
   ],
 };
 
 const apiGet  = async (action) => { const r = await fetch(`${API_URL}?action=${action}`); return r.json(); };
 const apiPost = async (action, data) => { const r = await fetch(API_URL,{method:"POST",body:JSON.stringify({action,data})}); return r.json(); };
 
-// 추첨 함수: 모든 상품을 각각 독립 확률로 굴린 뒤
+// 추첨 함수: 재고 소진된 상품 제외 후 독립 확률로 추첨
 // 당첨된 상품이 여럿이면 랜덤으로 1개 지급
-// → 설정한 확률이 정확히 그대로 적용됨
-function drawPrize(prizes) {
-  const winners = prizes.filter(p => Math.random() * 100 < Number(p.probability || 0));
+function drawPrize(prizes, prizeCount) {
+  const available = prizes.filter(p => {
+    const stock = Number(p.stock || 0);
+    if (stock === 0) return true; // 0 = 무제한
+    const used = prizeCount[p.name] || 0;
+    return used < stock;
+  });
+  const winners = available.filter(p => Math.random() * 100 < Number(p.probability || 0));
   if (winners.length === 0) return null;
   return winners[Math.floor(Math.random() * winners.length)];
 }
@@ -286,6 +289,7 @@ export default function App() {
   const [intro,setIntro]             = useState(INTRO_DEFAULT);
   const [lottery,setLottery]         = useState(LOTTERY_DEFAULT);
   const [winnerCount,setWinnerCount] = useState(0);
+  const [prizeCount,setPrizeCount]   = useState({});
   const [serverResetKey,setServerResetKey] = useState("1");
   const [wonPrize,setWonPrize]       = useState(null); // 당첨된 상품 객체
   const [revealed,setRevealed]       = useState(false);
@@ -313,8 +317,9 @@ export default function App() {
         if(cfg.questions) setQuestions(cfg.questions);
         if(cfg.company)   setCompany(cfg.company);
         if(cfg.intro)     setIntro(cfg.intro);
-        if(cfg.lottery)   setLottery({...LOTTERY_DEFAULT,...cfg.lottery, prizes: cfg.lottery.prizes||LOTTERY_DEFAULT.prizes});
+        if(cfg.lottery)   setLottery({...LOTTERY_DEFAULT,...cfg.lottery, prizes: (cfg.lottery.prizes||LOTTERY_DEFAULT.prizes).map(p=>({stock:0,...p}))});
         if(wc.count !== undefined) setWinnerCount(wc.count);
+        if(wc.prizeCount) setPrizeCount(wc.prizeCount);
         if(wc.resetKey)   setServerResetKey(wc.resetKey);
       }catch{}
       setPhase("intro");
@@ -353,7 +358,7 @@ export default function App() {
 
     let prize=null;
     if(lottery.enabled&&!alreadySubmitted&&!maxReached){
-      prize=drawPrize(lottery.prizes||[]);
+      prize=drawPrize(lottery.prizes||[],prizeCount);
     }
 
     localStorage.setItem("survey_reset_key",serverResetKey);
@@ -374,6 +379,7 @@ export default function App() {
     try{
       await apiPost("saveWinner",{name:winName,contact:winContact,prize:wonPrize.name,date:new Date().toLocaleString("ko-KR"),resetKey:serverResetKey});
       setWinnerCount(c=>c+1);
+      setPrizeCount(p=>({...p,[wonPrize.name]:(p[wonPrize.name]||0)+1}));
     }catch{}
     setWinSaved(true);
   };
@@ -382,7 +388,7 @@ export default function App() {
     setResetting(true);
     try{
       const res=await apiPost("resetLottery",{});
-      if(res.resetKey){setServerResetKey(res.resetKey);setWinnerCount(0);const cfg=await apiGet("config");if(cfg.lottery)setLottery({...LOTTERY_DEFAULT,...cfg.lottery,prizes:cfg.lottery.prizes||LOTTERY_DEFAULT.prizes});}
+      if(res.resetKey){setServerResetKey(res.resetKey);setWinnerCount(0);setPrizeCount({});const cfg=await apiGet("config");if(cfg.lottery)setLottery({...LOTTERY_DEFAULT,...cfg.lottery,prizes:cfg.lottery.prizes||LOTTERY_DEFAULT.prizes});}
     }catch{}
     setResetting(false); setConfirmReset(false);
   };
@@ -401,7 +407,7 @@ export default function App() {
 
   // 상품 편집 헬퍼
   const updatePrize=(pi,field,val)=>{const ps=[...editLottery.prizes];ps[pi]={...ps[pi],[field]:val};setEditLottery({...editLottery,prizes:ps});};
-  const addPrize=()=>{const newId=Math.max(...(editLottery.prizes||[]).map(p=>p.id),0)+1;setEditLottery({...editLottery,prizes:[...(editLottery.prizes||[]),{id:newId,name:"새 상품",probability:5}]});};
+  const addPrize=()=>{const newId=Math.max(...(editLottery.prizes||[]).map(p=>p.id),0)+1;setEditLottery({...editLottery,prizes:[...(editLottery.prizes||[]),{id:newId,name:"새 상품",probability:5,stock:0}]});};
   const delPrize=(pi)=>{if(editLottery.prizes.length>1)setEditLottery({...editLottery,prizes:editLottery.prizes.filter((_,i)=>i!==pi)});};
   const totalProb=(prizes)=>prizes.reduce((s,p)=>s+Number(p.probability||0),0);
 
@@ -609,14 +615,29 @@ export default function App() {
                   <div className="edit-label">상품 목록 (각 상품별 당첨 확률 독립 설정)</div>
                   {(editLottery.prizes||[]).map((p,pi)=>(
                     <div className="prize-edit-card" key={p.id}>
-                      <div style={{fontSize:"11px",color:"var(--muted)",fontWeight:600,marginBottom:"8px"}}>상품 {pi+1}</div>
+                      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"8px"}}>
+                        <span style={{fontSize:"11px",color:"var(--muted)",fontWeight:600}}>상품 {pi+1}</span>
+                        {(()=>{const stock=Number(p.stock||0);const used=prizeCount[p.name]||0;const full=stock>0&&used>=stock;return stock>0?<span style={{fontSize:"11px",fontWeight:600,color:full?"var(--wrong)":"var(--correct)"}}>{full?"🚫 소진":"✅"} {used}/{stock}개</span>:null;})()}
+                      </div>
                       <div className="prize-edit-row">
                         <input className="prize-name-input" placeholder="상품명" value={p.name} onChange={e=>updatePrize(pi,"name",e.target.value)}/>
-                        <div className="prize-prob-wrap">
-                          <input className="prize-prob-input" type="number" min="0" max="100" value={p.probability} onChange={e=>updatePrize(pi,"probability",Number(e.target.value))}/>
-                          <span className="prize-prob-unit">%</span>
-                        </div>
                         <button className="icon-btn" onClick={()=>delPrize(pi)} disabled={editLottery.prizes.length<=1}>×</button>
+                      </div>
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px",marginTop:"4px"}}>
+                        <div>
+                          <div style={{fontSize:"10px",color:"var(--muted)",fontWeight:600,letterSpacing:"1px",marginBottom:"4px"}}>당첨 확률</div>
+                          <div className="prize-prob-wrap">
+                            <input className="prize-prob-input" style={{width:"100%"}} type="number" min="0" max="100" value={p.probability} onChange={e=>updatePrize(pi,"probability",Number(e.target.value))}/>
+                            <span className="prize-prob-unit">%</span>
+                          </div>
+                        </div>
+                        <div>
+                          <div style={{fontSize:"10px",color:"var(--muted)",fontWeight:600,letterSpacing:"1px",marginBottom:"4px"}}>재고 수량 (0=무제한)</div>
+                          <div className="prize-prob-wrap">
+                            <input className="prize-prob-input" style={{width:"100%"}} type="number" min="0" value={p.stock||0} onChange={e=>updatePrize(pi,"stock",Number(e.target.value))}/>
+                            <span className="prize-prob-unit">개</span>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   ))}
