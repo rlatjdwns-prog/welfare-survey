@@ -14,9 +14,9 @@ const COMPANY_DEFAULT = {
   tagline: "당신 곁에 함께하는 사회복지 서비스",
   description: "저희 센터는 지역사회 구성원 모두가 존엄하고 행복한 삶을 누릴 수 있도록 맞춤형 복지 서비스를 제공합니다.",
   features: [
-    { icon: "🤝", title: "동료 지원", desc: "동료 상담 · 동료지원인 교육" },
-    { icon: "💛", title: "자립 지원", desc: "1:1 자립 지원 · 자조모임 운영" },
-    { icon: "🌿", title: "권익 옹호", desc: "인권 증진 · 인식 개선" },
+    { icon: "🤝", title: "동료 지원", desc: "동료 상담 · 동료지원인 양성" },
+    { icon: "💛", title: "자립 지원", desc: "당사자 1:1 자립 지원 · 자조모임 운영" },
+    { icon: "🌿", title: "권익 옹호", desc: "인권 증진 · 인식 개선 활동" },
     { icon: "👨‍👩‍👧", title: "특화 사업", desc: "지역사회 네트워킹 · 당사자 강연자 육성" },
   ],
   cta: "서비스 신청 / 문의하기",
@@ -518,7 +518,7 @@ export default function App() {
                   {(question.type==="single"||question.type==="multiple")&&question.options.map(opt=>{const pct=barW[question.id]?.[opt]??0;const mine=question.type==="multiple"?(answers[question.id]||[]).includes(opt):answers[question.id]===opt;return<div className="bar-row" key={opt}><div className={`bar-meta ${mine?"mine":""}`}><span>{mine?"✔ ":""}{opt}</span><span>{pct}%</span></div><div className="bar-track"><div className={`bar-fill ${mine?"mine":""}`} style={{width:`${pct}%`}}/></div></div>;})}
                 </div>
               ))}
-              <button className="btn btn-primary" style={{width:"100%",justifyContent:"center"}} onClick={()=>go("company")}>저희 센터 서비스 알아보기 <Arrow/></button>
+              <button className="btn btn-primary" style={{width:"100%",justifyContent:"center"}} onClick={()=>go("company")}>서동동 센터 서비스 알아보기 <Arrow/></button>
             </>
           )}
 
