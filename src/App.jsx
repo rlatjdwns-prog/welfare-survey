@@ -433,6 +433,10 @@ export default function App() {
       const res=await apiPost("resetLottery",{});
       if(res.resetKey){setServerResetKey(res.resetKey);setWinnerCount(0);setPrizeCount({});const cfg=await apiGet("config");if(cfg.lottery)setLottery({...LOTTERY_DEFAULT,...cfg.lottery,prizes:cfg.lottery.prizes||LOTTERY_DEFAULT.prizes});}
     }catch{}
+    // 로컬스토리지 초기화 → 이 기기도 다시 참여 가능
+    localStorage.removeItem("survey_reset_key");
+    // 기존 submitted 키 전체 삭제
+    Object.keys(localStorage).filter(k=>k.startsWith("survey_submitted_")).forEach(k=>localStorage.removeItem(k));
     setResetting(false); setConfirmReset(false);
   };
 
@@ -561,7 +565,10 @@ export default function App() {
 
               <div className="btn-row">
                 <button className="btn btn-ghost" onClick={()=>go("intro")}>← 이전</button>
-                <button className="btn btn-primary" onClick={()=>go("survey")} disabled={!winName.trim()||!winRegion.trim()||!winContact.trim()||!consented}>퀴즈 시작하기 <Arrow/></button>
+                <button className="btn btn-primary" onClick={async()=>{
+                  try{const wc=await apiGet("winnerCount");if(wc.resetKey)setServerResetKey(wc.resetKey);if(wc.count!==undefined)setWinnerCount(wc.count);if(wc.prizeCount)setPrizeCount(wc.prizeCount);}catch{}
+                  go("survey");
+                }} disabled={!winName.trim()||!winRegion.trim()||!winContact.trim()||!consented}>퀴즈 시작하기 <Arrow/></button>
               </div>
             </>
           )}
