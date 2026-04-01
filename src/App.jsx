@@ -386,9 +386,19 @@ export default function App() {
     const alreadySubmitted=localKey===freshResetKey&&localStorage.getItem("survey_submitted_"+freshResetKey)==="true";
     const maxReached=freshLottery.maxWinners>0&&freshWinnerCount>=freshLottery.maxWinners;
 
+    console.log("=== 추첨 디버그 ===");
+    console.log("enabled:", freshLottery.enabled);
+    console.log("alreadySubmitted:", alreadySubmitted, "| localKey:", localKey, "| freshResetKey:", freshResetKey);
+    console.log("maxReached:", maxReached, "| winnerCount:", freshWinnerCount, "| maxWinners:", freshLottery.maxWinners);
+    console.log("prizes:", JSON.stringify(freshLottery.prizes));
+    console.log("prizeCount:", JSON.stringify(freshPrizeCount));
+
     let prize=null;
     if(freshLottery.enabled&&!alreadySubmitted&&!maxReached){
       prize=drawPrize(freshLottery.prizes||[],freshPrizeCount);
+      console.log("drawPrize 결과:", prize);
+    } else {
+      console.log("추첨 건너뜀 — enabled:", freshLottery.enabled, "alreadySubmitted:", alreadySubmitted, "maxReached:", maxReached);
     }
 
     localStorage.setItem("survey_reset_key",freshResetKey);
