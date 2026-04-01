@@ -587,45 +587,14 @@ export default function App() {
           )}
 
           {/* LOTTERY */}
-          {phase==="lottery"&&(()=>{
-            const infoReady=winName.trim()&&winRegion.trim()&&winContact.trim()&&consented;
-            return(
+          {phase==="lottery"&&(
             <>
               <div className="eyebrow">즉석 추첨 🎰</div>
               <h1 style={{marginBottom:"8px"}}>행운을 긁어보세요!</h1>
-              <p className="subtitle" style={{marginBottom:"24px"}}>정보를 입력하고 동의하시면 추첨 카드를 확인할 수 있어요</p>
+              <p className="subtitle" style={{marginBottom:"32px"}}>아래 카드를 클릭하면 당첨 여부를 확인할 수 있어요 ✨</p>
 
-              {/* 개인정보 수집 폼 */}
-              {!revealed&&(
-                <div className="info-form">
-                  <div className="info-form-title">📋 참여자 정보 입력</div>
-                  <div className="info-form-sub">추첨 참여를 위해 아래 정보를 입력해주세요</div>
-                  <div className="form-field"><label className="form-label">이름</label><input className="form-input" placeholder="홍길동" value={winName} onChange={e=>setWinName(e.target.value)}/></div>
-                  <div className="form-field"><label className="form-label">사는 곳 (구 또는 시)</label><input className="form-input" placeholder="예: 마포구 / 수원시" value={winRegion} onChange={e=>setWinRegion(e.target.value)}/></div>
-                  <div className="form-field"><label className="form-label">전화번호</label><input className="form-input" placeholder="010-0000-0000" value={winContact} onChange={e=>setWinContact(e.target.value)}/></div>
-                </div>
-              )}
-
-              {/* 개인정보 동의 */}
-              {!revealed&&(
-                <div className="consent-box">
-                  <div className="consent-text">
-                    <strong>[개인정보 수집 및 이용 동의]</strong><br/>
-                    수집 항목: 이름, 사는 곳, 전화번호<br/>
-                    수집 목적: 추첨 이벤트 당첨자 확인 및 경품 발송<br/>
-                    보유 기간: 이벤트 종료 후 3개월<br/>
-                    위 개인정보 수집·이용에 동의하지 않으실 수 있으며, 미동의 시 추첨 참여가 제한됩니다.
-                  </div>
-                  <div className="consent-check-row" onClick={()=>setConsented(v=>!v)}>
-                    <div className={`consent-checkbox ${consented?"checked":""}`}>{consented&&<Check/>}</div>
-                    <span className="consent-label">개인정보 수집 및 이용에 동의합니다 (필수)</span>
-                  </div>
-                </div>
-              )}
-
-              {/* 추첨 카드 */}
               <div style={{textAlign:"center"}}>
-                <div className="scratch-area" onClick={infoReady?handleReveal:undefined} style={{cursor:infoReady?"pointer":"not-allowed",opacity:infoReady?1:0.5}}>
+                <div className="scratch-area" onClick={handleReveal}>
                   <div className={`scratch-result ${wonPrize?"win":"lose"}`}>
                     <div className="scratch-result-emoji">{wonPrize?"🎉":"😊"}</div>
                     <div className="scratch-result-text">{wonPrize?"당첨!":"아쉽게도 미당첨"}</div>
@@ -633,7 +602,7 @@ export default function App() {
                   </div>
                   <div className={`scratch-cover ${revealed?"revealed":""}`}>
                     <div className="scratch-cover-text">🎁</div>
-                    <div className="scratch-cover-sub">{infoReady?"클릭해서 확인하기":"정보 입력 후 확인 가능"}</div>
+                    <div className="scratch-cover-sub">클릭해서 확인하기</div>
                   </div>
                 </div>
 
@@ -658,8 +627,7 @@ export default function App() {
                 <button className="btn btn-primary" style={{flex:1,justifyContent:"center"}} onClick={()=>go("company")}>센터 소개 보기 <Arrow/></button>
               </div>
             </>
-            );
-          })()}
+          )}
 
           {/* COMPANY */}
           {phase==="company"&&(
