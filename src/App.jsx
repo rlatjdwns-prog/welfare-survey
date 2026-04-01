@@ -362,7 +362,7 @@ export default function App() {
   const next=async()=>{
     if(step<total-1){setStep(s=>s+1);animate();return;}
     go("submitting");
-    try{ await apiPost("submit",{questions,answers}); const res=await apiGet("stats"); setBarW(calcBars(res.stats||{},questions)); }catch{}
+    try{ await apiPost("submit",{questions,answers,name:winName,region:winRegion,contact:winContact}); const res=await apiGet("stats"); setBarW(calcBars(res.stats||{},questions)); }catch{}
 
     const localKey=localStorage.getItem("survey_reset_key");
     const alreadySubmitted=localKey===serverResetKey&&localStorage.getItem("survey_submitted_"+serverResetKey)==="true";
@@ -502,7 +502,39 @@ export default function App() {
                   </div>
                 ))}
               </div>
-              <button className="btn btn-primary" onClick={()=>{setAnswers({});setQuizRevealed({});setStep(0);go("survey");}}>{intro.btnText} <Arrow/></button>
+              <button className="btn btn-primary" onClick={()=>{setAnswers({});setQuizRevealed({});setStep(0);setWinName("");setWinRegion("");setWinContact("");setConsented(false);go("info");}}>{intro.btnText} <Arrow/></button>
+            </>
+          )}
+
+          {/* INFO - 개인정보 수집 (설문 시작 전) */}
+          {phase==="info"&&(
+            <>
+              <div className="eyebrow">{intro.eyebrow}</div>
+              <h2 style={{marginBottom:"8px"}}>참여자 정보 입력</h2>
+              <p className="subtitle" style={{marginBottom:"24px"}}>퀴즈 참여 및 추첨을 위해<br/>아래 정보를 먼저 입력해주세요</p>
+
+              <div className="form-field"><label className="form-label">이름 <span style={{color:"var(--wrong)"}}>*</span></label><input className="form-input" placeholder="홍길동" value={winName} onChange={e=>setWinName(e.target.value)}/></div>
+              <div className="form-field"><label className="form-label">사는 곳 (구 또는 시) <span style={{color:"var(--wrong)"}}>*</span></label><input className="form-input" placeholder="예: 마포구 / 수원시" value={winRegion} onChange={e=>setWinRegion(e.target.value)}/></div>
+              <div className="form-field" style={{marginBottom:"20px"}}><label className="form-label">전화번호 <span style={{color:"var(--wrong)"}}>*</span></label><input className="form-input" placeholder="010-0000-0000" value={winContact} onChange={e=>setWinContact(e.target.value)}/></div>
+
+              <div className="consent-box" style={{marginBottom:"28px"}}>
+                <div className="consent-text">
+                  <strong>[개인정보 수집 및 이용 동의]</strong><br/>
+                  수집 항목: 이름, 사는 곳, 전화번호<br/>
+                  수집 목적: 추첨 이벤트 당첨자 확인 및 경품 발송<br/>
+                  보유 기간: 이벤트 종료 후 3개월<br/>
+                  위 개인정보 수집·이용에 동의하지 않으실 수 있으며, 미동의 시 추첨 참여가 제한됩니다.
+                </div>
+                <div className="consent-check-row" onClick={()=>setConsented(v=>!v)}>
+                  <div className={`consent-checkbox ${consented?"checked":""}`}>{consented&&<Check/>}</div>
+                  <span className="consent-label">개인정보 수집 및 이용에 동의합니다 (필수)</span>
+                </div>
+              </div>
+
+              <div className="btn-row">
+                <button className="btn btn-ghost" onClick={()=>go("intro")}>← 이전</button>
+                <button className="btn btn-primary" onClick={()=>go("survey")} disabled={!winName.trim()||!winRegion.trim()||!winContact.trim()||!consented}>퀴즈 시작하기 <Arrow/></button>
+              </div>
             </>
           )}
 
@@ -550,7 +582,7 @@ export default function App() {
                   {(question.type==="single"||question.type==="multiple")&&question.options.map(opt=>{const pct=barW[question.id]?.[opt]??0;const mine=question.type==="multiple"?(answers[question.id]||[]).includes(opt):answers[question.id]===opt;return<div className="bar-row" key={opt}><div className={`bar-meta ${mine?"mine":""}`}><span>{mine?"✔ ":""}{opt}</span><span>{pct}%</span></div><div className="bar-track"><div className={`bar-fill ${mine?"mine":""}`} style={{width:`${pct}%`}}/></div></div>;})}
                 </div>
               ))}
-              <button className="btn btn-primary" style={{width:"100%",justifyContent:"center"}} onClick={()=>go("company")}>센터 알아보기 <Arrow/></button>
+              <button className="btn btn-primary" style={{width:"100%",justifyContent:"center"}} onClick={()=>go("company")}>저희 센터 알아보기 <Arrow/></button>
             </>
           )}
 
