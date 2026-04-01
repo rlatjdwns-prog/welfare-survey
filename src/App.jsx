@@ -558,7 +558,6 @@ export default function App() {
                   입력해 주시는 정보는 캠페인 참여 확인 및 이벤트 경품 추첨을 위해서만 소중히 사용되며<br/>
                   종료 후 안전하게 파기됩니다.<br/>
                 </div>
-                  <br/>
                   <strong>[개인정보 수집 및 이용 동의]</strong><br/>
                   수집 항목: 이름, 사는 곳, 전화번호<br/>
                   수집 목적: 추첨 이벤트 당첨자 확인 및 경품 발송<br/>
@@ -612,7 +611,7 @@ export default function App() {
             <>
               <div className="eyebrow">완료 🎉</div>
               <h1>결과 보기</h1>
-              <p className="subtitle" style={{marginBottom:"28px"}}>참여해 주셔서 감사합니다!</p>
+              <p className="subtitle" style={{marginBottom:"28px"}}>"맞고 틀림보다 '이해'가 먼저! 아래에서 정답과 해설을 확인해 보세요."</p>
               {score&&<div className="quiz-score-box"><div className="quiz-score-num">{score.correct}<span style={{fontSize:"24px",color:"var(--muted)"}}>/{score.total}</span></div><div className="quiz-score-label">퀴즈 점수 · {Math.round(score.correct/score.total*100)}점</div></div>}
               {lottery.enabled&&<div className="lottery-banner" onClick={()=>go("lottery")}><div className="lottery-banner-icon">🎰</div><div className="lottery-banner-text"><div className="lottery-banner-title">즉석 추첨 참여하기 →</div><div className="lottery-banner-desc">{lottery.description}</div></div></div>}
               {questions.map(question=>(
@@ -625,7 +624,7 @@ export default function App() {
                   {(question.type==="single"||question.type==="multiple")&&question.options.map(opt=>{const pct=barW[question.id]?.[opt]??0;const mine=question.type==="multiple"?(answers[question.id]||[]).includes(opt):answers[question.id]===opt;return<div className="bar-row" key={opt}><div className={`bar-meta ${mine?"mine":""}`}><span>{mine?"✔ ":""}{opt}</span><span>{pct}%</span></div><div className="bar-track"><div className={`bar-fill ${mine?"mine":""}`} style={{width:`${pct}%`}}/></div></div>;})}
                 </div>
               ))}
-              <button className="btn btn-primary" style={{width:"100%",justifyContent:"center"}} onClick={()=>go("company")}>저희 센터 알아보기 <Arrow/></button>
+              <button className="btn btn-primary" style={{width:"100%",justifyContent:"center"}} onClick={()=>go("company")}>서동동 센터 알아보기 <Arrow/></button>
             </>
           )}
 
