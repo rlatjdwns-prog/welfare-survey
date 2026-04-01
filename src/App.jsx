@@ -362,21 +362,39 @@ export default function App() {
   const next=async()=>{
     if(step<total-1){setStep(s=>s+1);animate();return;}
     go("submitting");
-    try{ await apiPost("submit",{questions,answers,name:winName,region:winRegion,contact:winContact}); const res=await apiGet("stats"); setBarW(calcBars(res.stats||{},questions)); }catch{}
+
+    // 제출 직전 서버에서 최신 당첨자 현황 + resetKey 가져오기
+    let freshResetKey=serverResetKey;
+    let freshWinnerCount=winnerCount;
+    let freshPrizeCount=prizeCount;
+    let freshLottery=lottery;
+    try{
+      const [submitRes, statsRes, wcRes, cfgRes] = await Promise.all([
+        apiPost("submit",{questions,answers,name:winName,region:winRegion,contact:winContact}),
+        apiGet("stats"),
+        apiGet("winnerCount"),
+        apiGet("config"),
+      ]);
+      if(statsRes.stats) setBarW(calcBars(statsRes.stats,questions));
+      if(wcRes.resetKey)  { freshResetKey=wcRes.resetKey; setServerResetKey(wcRes.resetKey); }
+      if(wcRes.count!==undefined){ freshWinnerCount=wcRes.count; setWinnerCount(wcRes.count); }
+      if(wcRes.prizeCount){ freshPrizeCount=wcRes.prizeCount; setPrizeCount(wcRes.prizeCount); }
+      if(cfgRes.lottery)  { freshLottery={...LOTTERY_DEFAULT,...cfgRes.lottery,prizes:(cfgRes.lottery.prizes||LOTTERY_DEFAULT.prizes).map(p=>({stock:0,...p}))}; setLottery(freshLottery); }
+    }catch{}
 
     const localKey=localStorage.getItem("survey_reset_key");
-    const alreadySubmitted=localKey===serverResetKey&&localStorage.getItem("survey_submitted_"+serverResetKey)==="true";
-    const maxReached=lottery.maxWinners>0&&winnerCount>=lottery.maxWinners;
+    const alreadySubmitted=localKey===freshResetKey&&localStorage.getItem("survey_submitted_"+freshResetKey)==="true";
+    const maxReached=freshLottery.maxWinners>0&&freshWinnerCount>=freshLottery.maxWinners;
 
     let prize=null;
-    if(lottery.enabled&&!alreadySubmitted&&!maxReached){
-      prize=drawPrize(lottery.prizes||[],prizeCount);
+    if(freshLottery.enabled&&!alreadySubmitted&&!maxReached){
+      prize=drawPrize(freshLottery.prizes||[],freshPrizeCount);
     }
 
-    localStorage.setItem("survey_reset_key",serverResetKey);
-    localStorage.setItem("survey_submitted_"+serverResetKey,"true");
+    localStorage.setItem("survey_reset_key",freshResetKey);
+    localStorage.setItem("survey_submitted_"+freshResetKey,"true");
 
-    setWonPrize(prize); setRevealed(false); setWinSaved(false); setWinName(""); setWinRegion(""); setWinContact(""); setConsented(false);
+    setWonPrize(prize); setRevealed(false); setWinSaved(false);
     go("results");
   };
   const prev=()=>{if(step>0){setStep(s=>s-1);animate();}};
