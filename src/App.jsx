@@ -551,10 +551,13 @@ export default function App() {
 
               <div className="consent-box" style={{marginBottom:"28px"}}>
                 <div className="consent-text">
-                  <p style="text-align: center"></p> <strong>"여러분의 소중한 참여가 편견 없는 사회를 만드는 첫걸음이 됩니다."</strong><br/>
+                 <div style={{ textAlign: "center", marginBottom: "20px" }}>
+                  <strong>"여러분의 소중한 참여가 편견 없는 사회를 만드는 첫걸음이 됩니다."</strong>
+                  <br /><br />
                   본 캠페인은 정신질환에 대한 올바른 정보를 알리고 인식을 개선하기 위해 마련되었습니다.<br/>
-                  입력해 주시는 정보는 캠페인 참여 확인 및 이벤트 경품 추첨을 위해서만 소중히 사용되며
+                  입력해 주시는 정보는 캠페인 참여 확인 및 이벤트 경품 추첨을 위해서만 소중히 사용되며<br/>
                   종료 후 안전하게 파기됩니다.<br/>
+                </div>
                   <br/>
                   <strong>[개인정보 수집 및 이용 동의]</strong><br/>
                   수집 항목: 이름, 사는 곳, 전화번호<br/>
