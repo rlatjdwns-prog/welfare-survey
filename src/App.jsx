@@ -201,7 +201,7 @@ const css = `
   .pw-box{background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:36px 32px;width:300px;box-shadow:0 8px 48px rgba(180,120,60,0.2);text-align:center;}
   .pw-title{font-family:'Gowun Batang',serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:8px;}
   .pw-sub{font-size:13px;color:var(--muted);margin-bottom:20px;}
-  .pw-input{width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:12px 16px;color:var(--text);font-family:inherit;font-size:18px;letter-spacing:6px;outline:none;text-align:center;transition:border-color .2s;margin-bottom:8px;}
+  .pw-input{width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:12px 16px;color:var(--text);font-family:inherit;font-size:16px;outline:none;text-align:center;transition:border-color .2s;margin-bottom:8px;}
   .pw-input:focus{border-color:var(--terra);}
   .pw-error{font-size:12px;color:#c04040;margin-bottom:12px;height:16px;}
   .pw-row{display:flex;gap:8px;}
@@ -260,6 +260,16 @@ const css = `
   .loading{display:flex;align-items:center;justify-content:center;gap:10px;color:var(--muted);font-size:14px;padding:40px 0;}
   .spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--terra);border-radius:50%;animation:spin .7s linear infinite;}
   @keyframes spin{to{transform:rotate(360deg);}}
+  /* 개인정보 동의 */
+  .consent-box{background:var(--surface2);border:1.5px solid var(--border);border-radius:14px;padding:18px 20px;margin-bottom:20px;}
+  .consent-text{font-size:12px;color:var(--muted);line-height:1.8;margin-bottom:14px;}
+  .consent-check-row{display:flex;align-items:center;gap:10px;cursor:pointer;}
+  .consent-checkbox{width:20px;height:20px;border-radius:5px;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+  .consent-checkbox.checked{border-color:var(--terra);background:var(--terra);}
+  .consent-label{font-size:13px;font-weight:500;color:var(--text);}
+  .info-form{background:linear-gradient(135deg,#fffbef,#fff4d6);border:1.5px solid var(--gold);border-radius:18px;padding:24px 22px;margin-bottom:24px;}
+  .info-form-title{font-family:'Gowun Batang',serif;font-size:17px;font-weight:700;color:var(--text);margin-bottom:4px;}
+  .info-form-sub{font-size:12px;color:var(--muted);margin-bottom:18px;line-height:1.5;}
   @media(max-width:560px){.card{padding:36px 22px;}.feat-grid{grid-template-columns:1fr;}}
 `;
 
@@ -295,8 +305,10 @@ export default function App() {
   const [revealed,setRevealed]       = useState(false);
   const [confetti,setConfetti]       = useState(false);
   const [winName,setWinName]         = useState("");
+  const [winRegion,setWinRegion]     = useState("");
   const [winContact,setWinContact]   = useState("");
   const [winSaved,setWinSaved]       = useState(false);
+  const [consented,setConsented]     = useState(false);
   const [editQ,setEditQ]             = useState(null);
   const [editCo,setEditCo]           = useState(null);
   const [editIntro,setEditIntro]     = useState(null);
@@ -364,22 +376,25 @@ export default function App() {
     localStorage.setItem("survey_reset_key",serverResetKey);
     localStorage.setItem("survey_submitted_"+serverResetKey,"true");
 
-    setWonPrize(prize); setRevealed(false); setWinSaved(false); setWinName(""); setWinContact("");
+    setWonPrize(prize); setRevealed(false); setWinSaved(false); setWinName(""); setWinRegion(""); setWinContact(""); setConsented(false);
     go("results");
   };
   const prev=()=>{if(step>0){setStep(s=>s-1);animate();}};
 
   const handleReveal=()=>{
     if(revealed)return; setRevealed(true);
-    if(wonPrize){setTimeout(()=>setConfetti(true),300);setTimeout(()=>setConfetti(false),4000);}
+    if(wonPrize){
+      setTimeout(()=>setConfetti(true),300);
+      setTimeout(()=>setConfetti(false),4000);
+      saveWinner(wonPrize);
+    }
   };
 
-  const saveWinner=async()=>{
-    if(!winName.trim()||!winContact.trim())return;
+  const saveWinner=async(prize)=>{
     try{
-      await apiPost("saveWinner",{name:winName,contact:winContact,prize:wonPrize.name,date:new Date().toLocaleString("ko-KR"),resetKey:serverResetKey});
+      await apiPost("saveWinner",{name:winName,region:winRegion,contact:winContact,prize:prize.name,date:new Date().toLocaleString("ko-KR"),resetKey:serverResetKey});
       setWinnerCount(c=>c+1);
-      setPrizeCount(p=>({...p,[wonPrize.name]:(p[wonPrize.name]||0)+1}));
+      setPrizeCount(p=>({...p,[prize.name]:(p[prize.name]||0)+1}));
     }catch{}
     setWinSaved(true);
   };
@@ -430,7 +445,7 @@ export default function App() {
               <div className="pw-box" onClick={e=>e.stopPropagation()}>
                 <div className="pw-title">🔒 관리자 확인</div>
                 <div className="pw-sub">비밀번호를 입력해주세요</div>
-                <input className="pw-input" type="password" maxLength={6} value={pwVal} onChange={e=>{setPwVal(e.target.value);setPwErr(false);}} onKeyDown={e=>e.key==="Enter"&&handlePwSubmit()} autoFocus placeholder="••••"/>
+                <input className="pw-input" type="password" value={pwVal} onChange={e=>{setPwVal(e.target.value);setPwErr(false);}} onKeyDown={e=>e.key==="Enter"&&handlePwSubmit()} autoFocus placeholder="비밀번호 입력"/>
                 <div className="pw-error">{pwErr?"비밀번호가 틀렸습니다":""}</div>
                 <div className="pw-row">
                   <button className="btn btn-ghost" style={{flex:1,justifyContent:"center"}} onClick={()=>setPwOpen(false)}>취소</button>
@@ -535,50 +550,84 @@ export default function App() {
                   {(question.type==="single"||question.type==="multiple")&&question.options.map(opt=>{const pct=barW[question.id]?.[opt]??0;const mine=question.type==="multiple"?(answers[question.id]||[]).includes(opt):answers[question.id]===opt;return<div className="bar-row" key={opt}><div className={`bar-meta ${mine?"mine":""}`}><span>{mine?"✔ ":""}{opt}</span><span>{pct}%</span></div><div className="bar-track"><div className={`bar-fill ${mine?"mine":""}`} style={{width:`${pct}%`}}/></div></div>;})}
                 </div>
               ))}
-              <button className="btn btn-primary" style={{width:"100%",justifyContent:"center"}} onClick={()=>go("company")}>서동동센터 알아보기 <Arrow/></button>
+              <button className="btn btn-primary" style={{width:"100%",justifyContent:"center"}} onClick={()=>go("company")}>저희 센터 알아보기 <Arrow/></button>
             </>
           )}
 
           {/* LOTTERY */}
-          {phase==="lottery"&&(
+          {phase==="lottery"&&(()=>{
+            const infoReady=winName.trim()&&winRegion.trim()&&winContact.trim()&&consented;
+            return(
             <>
               <div className="eyebrow">즉석 추첨 🎰</div>
               <h1 style={{marginBottom:"8px"}}>행운을 긁어보세요!</h1>
-              <p className="subtitle" style={{marginBottom:"32px"}}>아래 카드를 클릭하면 당첨 여부를 확인할 수 있어요 ✨</p>
+              <p className="subtitle" style={{marginBottom:"24px"}}>정보를 입력하고 동의하시면 추첨 카드를 확인할 수 있어요</p>
+
+              {/* 개인정보 수집 폼 */}
+              {!revealed&&(
+                <div className="info-form">
+                  <div className="info-form-title">📋 참여자 정보 입력</div>
+                  <div className="info-form-sub">추첨 참여를 위해 아래 정보를 입력해주세요</div>
+                  <div className="form-field"><label className="form-label">이름</label><input className="form-input" placeholder="홍길동" value={winName} onChange={e=>setWinName(e.target.value)}/></div>
+                  <div className="form-field"><label className="form-label">사는 곳 (구 또는 시)</label><input className="form-input" placeholder="예: 마포구 / 수원시" value={winRegion} onChange={e=>setWinRegion(e.target.value)}/></div>
+                  <div className="form-field"><label className="form-label">전화번호</label><input className="form-input" placeholder="010-0000-0000" value={winContact} onChange={e=>setWinContact(e.target.value)}/></div>
+                </div>
+              )}
+
+              {/* 개인정보 동의 */}
+              {!revealed&&(
+                <div className="consent-box">
+                  <div className="consent-text">
+                    <strong>[개인정보 수집 및 이용 동의]</strong><br/>
+                    수집 항목: 이름, 사는 곳, 전화번호<br/>
+                    수집 목적: 추첨 이벤트 당첨자 확인 및 경품 발송<br/>
+                    보유 기간: 이벤트 종료 후 3개월<br/>
+                    위 개인정보 수집·이용에 동의하지 않으실 수 있으며, 미동의 시 추첨 참여가 제한됩니다.
+                  </div>
+                  <div className="consent-check-row" onClick={()=>setConsented(v=>!v)}>
+                    <div className={`consent-checkbox ${consented?"checked":""}`}>{consented&&<Check/>}</div>
+                    <span className="consent-label">개인정보 수집 및 이용에 동의합니다 (필수)</span>
+                  </div>
+                </div>
+              )}
+
+              {/* 추첨 카드 */}
               <div style={{textAlign:"center"}}>
-                <div className="scratch-area" onClick={handleReveal}>
+                <div className="scratch-area" onClick={infoReady?handleReveal:undefined} style={{cursor:infoReady?"pointer":"not-allowed",opacity:infoReady?1:0.5}}>
                   <div className={`scratch-result ${wonPrize?"win":"lose"}`}>
                     <div className="scratch-result-emoji">{wonPrize?"🎉":"😊"}</div>
                     <div className="scratch-result-text">{wonPrize?"당첨!":"아쉽게도 미당첨"}</div>
                     <div className="scratch-result-sub">{wonPrize?wonPrize.name:"다음 기회에 도전해보세요"}</div>
                   </div>
-                  <div className={`scratch-cover ${revealed?"revealed":""}`}><div className="scratch-cover-text">🎁</div><div className="scratch-cover-sub">클릭해서 확인하기</div></div>
+                  <div className={`scratch-cover ${revealed?"revealed":""}`}>
+                    <div className="scratch-cover-text">🎁</div>
+                    <div className="scratch-cover-sub">{infoReady?"클릭해서 확인하기":"정보 입력 후 확인 가능"}</div>
+                  </div>
                 </div>
-                {revealed&&wonPrize&&!winSaved&&(
-                  <div className="winner-form">
-                    <div className="winner-form-title">🎊 축하드려요!</div>
-                    <div className="winner-form-sub">연락처를 남겨주시면 선물을 보내드릴게요.<br/>매월 말 당첨자에게 연락드립니다.</div>
-                    <div className="prize-badge">🎁 {wonPrize.name}</div>
-                    <div className="form-field"><label className="form-label">이름</label><input className="form-input" placeholder="홍길동" value={winName} onChange={e=>setWinName(e.target.value)}/></div>
-                    <div className="form-field"><label className="form-label">연락처</label><input className="form-input" placeholder="010-0000-0000" value={winContact} onChange={e=>setWinContact(e.target.value)}/></div>
-                    <button className="btn btn-gold" style={{width:"100%",justifyContent:"center",marginTop:"8px"}} onClick={saveWinner} disabled={!winName.trim()||!winContact.trim()}>연락처 제출하기 <Arrow/></button>
+
+                {revealed&&wonPrize&&(
+                  <div style={{textAlign:"center",padding:"24px",background:"var(--gold-bg)",border:"1px solid var(--gold)",borderRadius:"16px",marginTop:"20px"}}>
+                    <div style={{fontSize:"36px",marginBottom:"10px"}}>🎊</div>
+                    <div style={{fontFamily:"'Gowun Batang',serif",fontSize:"18px",fontWeight:700,marginBottom:"6px"}}>당첨을 축하드려요!</div>
+                    <div style={{fontSize:"13px",color:"var(--gold)",fontWeight:600,marginBottom:"4px"}}>🎁 {wonPrize.name}</div>
+                    <div style={{fontSize:"12px",color:"var(--muted)"}}>입력하신 연락처로 안내드릴 예정입니다 😊</div>
                   </div>
                 )}
-                {revealed&&wonPrize&&winSaved&&(
-                  <div style={{textAlign:"center",padding:"24px",background:"var(--gold-bg)",border:"1px solid var(--gold)",borderRadius:"16px",marginTop:"20px"}}>
-                    <div style={{fontSize:"36px",marginBottom:"10px"}}>✅</div>
-                    <div style={{fontFamily:"'Gowun Batang',serif",fontSize:"18px",fontWeight:700,marginBottom:"6px"}}>제출 완료!</div>
-                    <div style={{fontSize:"13px",color:"var(--muted)"}}>월말에 연락드리겠습니다 😊</div>
+                {revealed&&!wonPrize&&(
+                  <div style={{textAlign:"center",padding:"20px",background:"var(--surface2)",border:"1px solid var(--border)",borderRadius:"16px",marginTop:"20px"}}>
+                    <div style={{fontSize:"13px",color:"var(--muted)"}}>아쉽지만 다음 기회를 노려보세요!</div>
                   </div>
                 )}
               </div>
+
               <div className="divider"/>
               <div style={{display:"flex",gap:"10px"}}>
                 <button className="btn btn-ghost" style={{flex:1,justifyContent:"center"}} onClick={()=>go("results")}>← 결과로</button>
                 <button className="btn btn-primary" style={{flex:1,justifyContent:"center"}} onClick={()=>go("company")}>센터 소개 보기 <Arrow/></button>
               </div>
             </>
-          )}
+            );
+          })()}
 
           {/* COMPANY */}
           {phase==="company"&&(
