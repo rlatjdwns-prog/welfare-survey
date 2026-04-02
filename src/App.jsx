@@ -33,7 +33,6 @@ const QUESTIONS_DEFAULT = [
 
 const LOTTERY_DEFAULT = {
   enabled: true,
-  maxWinners: 0,
   description: "퀴즈 참여자 중 추첨하여 선물을 드립니다!",
   resetKey: "1",
   prizes: [
@@ -298,9 +297,11 @@ export default function App() {
   const [company,setCompany]         = useState(COMPANY_DEFAULT);
   const [intro,setIntro]             = useState(INTRO_DEFAULT);
   const [lottery,setLottery]         = useState(LOTTERY_DEFAULT);
-  const [winnerCount,setWinnerCount] = useState(0);
   const [prizeCount,setPrizeCount]   = useState({});
   const [serverResetKey,setServerResetKey] = useState("1");
+  const [winnerRowIndex,setWinnerRowIndex] = useState(null);
+  const [winAddress,setWinAddress]   = useState("");
+  const [addressSaved,setAddressSaved] = useState(false);
   const [wonPrize,setWonPrize]       = useState(null); // 당첨된 상품 객체
   const [revealed,setRevealed]       = useState(false);
   const [confetti,setConfetti]       = useState(false);
@@ -325,14 +326,13 @@ export default function App() {
   useEffect(()=>{
     (async()=>{
       try{
-        const [cfg,wc] = await Promise.all([apiGet("config"),apiGet("winnerCount")]);
+        const [cfg,ps] = await Promise.all([apiGet("config"),apiGet("prizeStatus")]);
         if(cfg.questions) setQuestions(cfg.questions);
         if(cfg.company)   setCompany(cfg.company);
         if(cfg.intro)     setIntro(cfg.intro);
         if(cfg.lottery)   setLottery({...LOTTERY_DEFAULT,...cfg.lottery, prizes: (cfg.lottery.prizes||LOTTERY_DEFAULT.prizes).map(p=>({stock:0,...p}))});
-        if(wc.count !== undefined) setWinnerCount(wc.count);
-        if(wc.prizeCount) setPrizeCount(wc.prizeCount);
-        if(wc.resetKey)   setServerResetKey(wc.resetKey);
+        if(ps.prizeCount) setPrizeCount(ps.prizeCount);
+        if(ps.resetKey)   setServerResetKey(ps.resetKey);
       }catch{}
       setPhase("intro");
     })();
@@ -362,49 +362,40 @@ export default function App() {
   const next=async()=>{
     if(step<total-1){setStep(s=>s+1);animate();return;}
     go("submitting");
-
-    // 제출 직전 서버에서 최신 당첨자 현황 + resetKey 가져오기
-    let freshResetKey=serverResetKey;
-    let freshWinnerCount=winnerCount;
-    let freshPrizeCount=prizeCount;
-    let freshLottery=lottery;
     try{
-      const [submitRes, statsRes, wcRes, cfgRes] = await Promise.all([
+      const [submitRes,statsRes] = await Promise.all([
         apiPost("submit",{questions,answers,name:winName,region:winRegion,contact:winContact}),
         apiGet("stats"),
-        apiGet("winnerCount"),
-        apiGet("config"),
       ]);
       if(statsRes.stats) setBarW(calcBars(statsRes.stats,questions));
-      if(wcRes.resetKey)  { freshResetKey=wcRes.resetKey; setServerResetKey(wcRes.resetKey); }
-      if(wcRes.count!==undefined){ freshWinnerCount=wcRes.count; setWinnerCount(wcRes.count); }
-      if(wcRes.prizeCount){ freshPrizeCount=wcRes.prizeCount; setPrizeCount(wcRes.prizeCount); }
-      if(cfgRes.lottery)  { freshLottery={...LOTTERY_DEFAULT,...cfgRes.lottery,prizes:(cfgRes.lottery.prizes||LOTTERY_DEFAULT.prizes).map(p=>({stock:0,...p}))}; setLottery(freshLottery); }
     }catch{}
 
+    // 중복 참여 여부는 클라이언트에서 1차 체크 (서버도 재고로 2차 체크)
     const localKey=localStorage.getItem("survey_reset_key");
-    const alreadySubmitted=localKey===freshResetKey&&localStorage.getItem("survey_submitted_"+freshResetKey)==="true";
-    const maxReached=freshLottery.maxWinners>0&&freshWinnerCount>=freshLottery.maxWinners;
+    const alreadySubmitted=localKey===serverResetKey&&localStorage.getItem("survey_submitted_"+serverResetKey)==="true";
 
-    console.log("=== 추첨 디버그 ===");
-    console.log("enabled:", freshLottery.enabled);
-    console.log("alreadySubmitted:", alreadySubmitted, "| localKey:", localKey, "| freshResetKey:", freshResetKey);
-    console.log("maxReached:", maxReached, "| winnerCount:", freshWinnerCount, "| maxWinners:", freshLottery.maxWinners);
-    console.log("prizes:", JSON.stringify(freshLottery.prizes));
-    console.log("prizeCount:", JSON.stringify(freshPrizeCount));
-
-    let prize=null;
-    if(freshLottery.enabled&&!alreadySubmitted&&!maxReached){
-      prize=drawPrize(freshLottery.prizes||[],freshPrizeCount);
-      console.log("drawPrize 결과:", prize);
-    } else {
-      console.log("추첨 건너뜀 — enabled:", freshLottery.enabled, "alreadySubmitted:", alreadySubmitted, "maxReached:", maxReached);
+    let wonPrizeName=null;
+    let rowIdx=null;
+    if(lottery.enabled&&!alreadySubmitted){
+      // 추첨은 서버에서 처리 (LockService로 동시 접근 방지)
+      try{
+        const res=await apiPost("drawLottery",{name:winName,region:winRegion,contact:winContact});
+        if(res.ok&&res.won){ wonPrizeName=res.prize; rowIdx=res.rowIndex; }
+        if(res.prizeCount) setPrizeCount(res.prizeCount);
+        if(res.resetKey)   setServerResetKey(res.resetKey);
+      }catch{}
     }
 
-    localStorage.setItem("survey_reset_key",freshResetKey);
-    localStorage.setItem("survey_submitted_"+freshResetKey,"true");
+    localStorage.setItem("survey_reset_key",serverResetKey);
+    localStorage.setItem("survey_submitted_"+serverResetKey,"true");
 
-    setWonPrize(prize); setRevealed(false); setWinSaved(false);
+    const prize=wonPrizeName?{name:wonPrizeName}:null;
+    setWonPrize(prize);
+    setWinnerRowIndex(rowIdx);
+    setRevealed(false);
+    setWinSaved(false);
+    setWinAddress("");
+    setAddressSaved(false);
     go("results");
   };
   const prev=()=>{if(step>0){setStep(s=>s-1);animate();}};
@@ -414,24 +405,22 @@ export default function App() {
     if(wonPrize){
       setTimeout(()=>setConfetti(true),300);
       setTimeout(()=>setConfetti(false),4000);
-      saveWinner(wonPrize);
     }
   };
 
-  const saveWinner=async(prize)=>{
+  const saveAddress=async()=>{
+    if(!winAddress.trim()||!winnerRowIndex)return;
     try{
-      await apiPost("saveWinner",{name:winName,region:winRegion,contact:winContact,prize:prize.name,date:new Date().toLocaleString("ko-KR"),resetKey:serverResetKey});
-      setWinnerCount(c=>c+1);
-      setPrizeCount(p=>({...p,[prize.name]:(p[prize.name]||0)+1}));
+      await apiPost("saveAddress",{rowIndex:winnerRowIndex,address:winAddress});
     }catch{}
-    setWinSaved(true);
+    setAddressSaved(true);
   };
 
   const doReset=async()=>{
     setResetting(true);
     try{
       const res=await apiPost("resetLottery",{});
-      if(res.resetKey){setServerResetKey(res.resetKey);setWinnerCount(0);setPrizeCount({});const cfg=await apiGet("config");if(cfg.lottery)setLottery({...LOTTERY_DEFAULT,...cfg.lottery,prizes:cfg.lottery.prizes||LOTTERY_DEFAULT.prizes});}
+      if(res.resetKey){setServerResetKey(res.resetKey);setPrizeCount({});const cfg=await apiGet("config");if(cfg.lottery)setLottery({...LOTTERY_DEFAULT,...cfg.lottery,prizes:(cfg.lottery.prizes||LOTTERY_DEFAULT.prizes).map(p=>({stock:0,...p}))});}
     }catch{}
     // 로컬스토리지 초기화 → 이 기기도 다시 참여 가능
     localStorage.removeItem("survey_reset_key");
@@ -461,8 +450,10 @@ export default function App() {
   const saveAdmin=async()=>{setSaving(true);try{await apiPost("saveConfig",{questions:editQ,company:editCo,intro:editIntro,lottery:{...editLottery,resetKey:serverResetKey}});}catch{}setQuestions(editQ);setCompany(editCo);setIntro(editIntro);setLottery({...editLottery,resetKey:serverResetKey});setSaving(false);go("intro");};
 
   const score=calcQuizScore();
-  const maxReached=lottery.maxWinners>0&&winnerCount>=lottery.maxWinners;
-  const winnerPct=lottery.maxWinners>0?Math.min(winnerCount/lottery.maxWinners*100,100):0;
+  // 재고 소진 여부: 모든 상품이 소진됐으면 마감
+  const allSoldOut=(lottery.prizes||[]).filter(p=>Number(p.stock||0)>0).every(p=>(prizeCount[p.name]||0)>=(Number(p.stock)));
+  const hasLimitedStock=(lottery.prizes||[]).some(p=>Number(p.stock||0)>0);
+  const maxReached=hasLimitedStock&&allSoldOut;
   const activePrizes=(lottery.prizes||[]).filter(p=>p.probability>0);
 
   return (
@@ -551,13 +542,6 @@ export default function App() {
 
               <div className="consent-box" style={{marginBottom:"28px"}}>
                 <div className="consent-text">
-                 <div style={{ textAlign: "center", marginBottom: "20px" }}>
-                  <strong>"여러분의 소중한 참여가 편견 없는 사회를 만드는 첫걸음이 됩니다."</strong>
-                  <br /><br />
-                  본 캠페인은 정신질환에 대한 올바른 정보를 알리고 인식을 개선하기 위해 마련되었습니다.<br/>
-                  입력해 주시는 정보는 캠페인 참여 확인 및 이벤트 경품 추첨을 위해서만 소중히 사용되며<br/>
-                  종료 후 안전하게 파기됩니다.<br/>
-                </div>
                   <strong>[개인정보 수집 및 이용 동의]</strong><br/>
                   수집 항목: 이름, 사는 곳, 전화번호<br/>
                   수집 목적: 추첨 이벤트 당첨자 확인 및 경품 발송<br/>
@@ -573,7 +557,7 @@ export default function App() {
               <div className="btn-row">
                 <button className="btn btn-ghost" onClick={()=>go("intro")}>← 이전</button>
                 <button className="btn btn-primary" onClick={async()=>{
-                  try{const wc=await apiGet("winnerCount");if(wc.resetKey)setServerResetKey(wc.resetKey);if(wc.count!==undefined)setWinnerCount(wc.count);if(wc.prizeCount)setPrizeCount(wc.prizeCount);}catch{}
+                  try{const ps=await apiGet("prizeStatus");if(ps.resetKey)setServerResetKey(ps.resetKey);if(ps.prizeCount)setPrizeCount(ps.prizeCount);}catch{}
                   go("survey");
                 }} disabled={!winName.trim()||!winRegion.trim()||!winContact.trim()||!consented}>퀴즈 시작하기 <Arrow/></button>
               </div>
@@ -611,7 +595,7 @@ export default function App() {
             <>
               <div className="eyebrow">완료 🎉</div>
               <h1>결과 보기</h1>
-              <p className="subtitle" style={{marginBottom:"28px"}}>"맞고 틀림보다 '이해'가 먼저! 아래에서 정답과 해설을 확인해 보세요."</p>
+              <p className="subtitle" style={{marginBottom:"28px"}}>참여해 주셔서 감사합니다!</p>
               {score&&<div className="quiz-score-box"><div className="quiz-score-num">{score.correct}<span style={{fontSize:"24px",color:"var(--muted)"}}>/{score.total}</span></div><div className="quiz-score-label">퀴즈 점수 · {Math.round(score.correct/score.total*100)}점</div></div>}
               {lottery.enabled&&<div className="lottery-banner" onClick={()=>go("lottery")}><div className="lottery-banner-icon">🎰</div><div className="lottery-banner-text"><div className="lottery-banner-title">즉석 추첨 참여하기 →</div><div className="lottery-banner-desc">{lottery.description}</div></div></div>}
               {questions.map(question=>(
@@ -624,7 +608,7 @@ export default function App() {
                   {(question.type==="single"||question.type==="multiple")&&question.options.map(opt=>{const pct=barW[question.id]?.[opt]??0;const mine=question.type==="multiple"?(answers[question.id]||[]).includes(opt):answers[question.id]===opt;return<div className="bar-row" key={opt}><div className={`bar-meta ${mine?"mine":""}`}><span>{mine?"✔ ":""}{opt}</span><span>{pct}%</span></div><div className="bar-track"><div className={`bar-fill ${mine?"mine":""}`} style={{width:`${pct}%`}}/></div></div>;})}
                 </div>
               ))}
-              <button className="btn btn-primary" style={{width:"100%",justifyContent:"center"}} onClick={()=>go("company")}>서동동 센터 알아보기 <Arrow/></button>
+              <button className="btn btn-primary" style={{width:"100%",justifyContent:"center"}} onClick={()=>go("company")}>저희 센터 알아보기 <Arrow/></button>
             </>
           )}
 
@@ -648,12 +632,25 @@ export default function App() {
                   </div>
                 </div>
 
-                {revealed&&wonPrize&&(
+                {revealed&&wonPrize&&!addressSaved&&(
+                  <div className="winner-form" style={{marginTop:"20px",textAlign:"left"}}>
+                    <div style={{fontSize:"36px",textAlign:"center",marginBottom:"8px"}}>🎊</div>
+                    <div className="winner-form-title" style={{textAlign:"center"}}>당첨을 축하드려요!</div>
+                    <div style={{textAlign:"center",marginBottom:"16px"}}><span className="prize-badge">🎁 {wonPrize.name}</span></div>
+                    <div className="winner-form-sub">상품 배송을 위해 상세 주소를 입력해주세요</div>
+                    <div className="form-field">
+                      <label className="form-label">상세 주소</label>
+                      <input className="form-input" placeholder="예: 동교로 62-1, 3층" value={winAddress} onChange={e=>setWinAddress(e.target.value)}/>
+                    </div>
+                    <button className="btn btn-gold" style={{width:"100%",justifyContent:"center",marginTop:"8px"}} onClick={saveAddress} disabled={!winAddress.trim()}>주소 제출하기 <Arrow/></button>
+                  </div>
+                )}
+                {revealed&&wonPrize&&addressSaved&&(
                   <div style={{textAlign:"center",padding:"24px",background:"var(--gold-bg)",border:"1px solid var(--gold)",borderRadius:"16px",marginTop:"20px"}}>
-                    <div style={{fontSize:"36px",marginBottom:"10px"}}>🎊</div>
-                    <div style={{fontFamily:"'Gowun Batang',serif",fontSize:"18px",fontWeight:700,marginBottom:"6px"}}>당첨을 축하드려요!</div>
+                    <div style={{fontSize:"36px",marginBottom:"10px"}}>✅</div>
+                    <div style={{fontFamily:"'Gowun Batang',serif",fontSize:"18px",fontWeight:700,marginBottom:"6px"}}>제출 완료!</div>
                     <div style={{fontSize:"13px",color:"var(--gold)",fontWeight:600,marginBottom:"4px"}}>🎁 {wonPrize.name}</div>
-                    <div style={{fontSize:"12px",color:"var(--muted)"}}>입력하신 연락처로 안내드릴 예정입니다 😊</div>
+                    <div style={{fontSize:"12px",color:"var(--muted)"}}>입력하신 주소로 배송해드릴 예정입니다 😊</div>
                   </div>
                 )}
                 {revealed&&!wonPrize&&(
@@ -735,19 +732,27 @@ export default function App() {
 
                   <button className="btn btn-ghost" style={{width:"100%",justifyContent:"center",marginTop:"8px"}} onClick={addPrize}>+ 상품 추가</button>
 
-                  <div className="edit-label" style={{marginTop:"16px"}}>최대 당첨자 수 (0 = 제한 없음)</div>
-                  <div className="prob-row"><input className="prob-input" type="number" min="0" value={editLottery.maxWinners} onChange={e=>setEditLottery({...editLottery,maxWinners:Number(e.target.value)})}/><span style={{fontSize:"13px",color:"var(--muted)"}}>명 초과 시 자동 마감</span></div>
-
                   <div className="edit-label">추첨 안내 문구</div>
                   <input className="edit-field" value={editLottery.description} onChange={e=>setEditLottery({...editLottery,description:e.target.value})}/>
 
-                  {/* 당첨자 현황 */}
+                  {/* 상품별 당첨자 현황 */}
                   <div className="winner-status" style={{marginTop:"8px"}}>
-                    <div className="winner-status-row">
-                      <span className="winner-status-label">이번 회차 당첨자</span>
-                      <span className="winner-status-count">{winnerCount}{editLottery.maxWinners>0?` / ${editLottery.maxWinners}명`:""}</span>
-                    </div>
-                    {editLottery.maxWinners>0&&<div className="winner-status-bar"><div className="winner-status-fill" style={{width:`${winnerPct}%`}}/></div>}
+                    <div className="winner-status-label" style={{marginBottom:"10px"}}>📊 이번 회차 상품별 현황</div>
+                    {(editLottery.prizes||[]).map(p=>{
+                      const stock=Number(p.stock||0);
+                      const used=prizeCount[p.name]||0;
+                      const full=stock>0&&used>=stock;
+                      const pct=stock>0?Math.min(used/stock*100,100):0;
+                      return(
+                        <div key={p.id} style={{marginBottom:"10px"}}>
+                          <div style={{display:"flex",justifyContent:"space-between",fontSize:"12px",marginBottom:"4px"}}>
+                            <span style={{fontWeight:500}}>{p.name}</span>
+                            <span style={{color:full?"var(--wrong)":"var(--gold)",fontWeight:600}}>{full?"🚫 소진":stock>0?`${used}/${stock}명`:"무제한"}</span>
+                          </div>
+                          {stock>0&&<div className="winner-status-bar"><div className="winner-status-fill" style={{width:`${pct}%`,background:full?"var(--wrong)":undefined}}/></div>}
+                        </div>
+                      );
+                    })}
                   </div>
                   <button className="btn btn-danger" style={{width:"100%",justifyContent:"center",marginTop:"4px"}} onClick={()=>setConfirmReset(true)}>🔄 추첨 초기화 (새 회차 시작)</button>
                   <p style={{fontSize:"11px",color:"var(--muted2)",marginTop:"6px",lineHeight:"1.5"}}>초기화하면 당첨자 수가 0으로 리셋되고 이전 참여자도 다시 당첨될 수 있어요.</p>
