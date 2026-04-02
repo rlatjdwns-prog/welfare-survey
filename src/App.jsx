@@ -364,7 +364,7 @@ export default function App() {
     go("submitting");
     try{
       const [submitRes,statsRes] = await Promise.all([
-        apiPost("submit",{questions,answers,name:winName,region:winRegion,contact:winContact}),
+        apiPost("submit",{questions,answers,name:winName,region:winRegion,contact:winContact,consented:true}),
         apiGet("stats"),
       ]);
       if(statsRes.stats) setBarW(calcBars(statsRes.stats,questions));
@@ -431,7 +431,15 @@ export default function App() {
 
   const handleAdminClick=()=>{setPwOpen(true);setPwVal("");setPwErr(false);};
   const handlePwSubmit=()=>{if(pwVal==="0723"){setPwOpen(false);openAdmin();}else{setPwErr(true);setPwVal("");}};
-  const openAdmin=()=>{setEditQ(JSON.parse(JSON.stringify(questions)));setEditCo(JSON.parse(JSON.stringify(company)));setEditIntro(JSON.parse(JSON.stringify(intro)));setEditLottery(JSON.parse(JSON.stringify(lottery)));go("admin");};
+  const openAdmin=async()=>{
+    // 편집 진입 시 최신 당첨 현황 새로 가져오기
+    try{const ps=await apiGet("prizeStatus");if(ps.prizeCount)setPrizeCount(ps.prizeCount);if(ps.resetKey)setServerResetKey(ps.resetKey);}catch{}
+    setEditQ(JSON.parse(JSON.stringify(questions)));
+    setEditCo(JSON.parse(JSON.stringify(company)));
+    setEditIntro(JSON.parse(JSON.stringify(intro)));
+    setEditLottery(JSON.parse(JSON.stringify(lottery)));
+    go("admin");
+  };
 
   const updateQ=(i,f,v)=>{const qs=[...editQ];qs[i]={...qs[i],[f]:v};setEditQ(qs);};
   const updateOpt=(qi,oi,v)=>{const qs=[...editQ];const o=[...qs[qi].options];o[oi]=v;qs[qi]={...qs[qi],options:o};setEditQ(qs);};
@@ -542,21 +550,20 @@ export default function App() {
 
               <div className="consent-box" style={{marginBottom:"28px"}}>
                 <div className="consent-text">
-                <div style={{ textAlign: "center", marginBottom: "20px" }}>
-                 <strong>"여러분의 소중한 참여가 편견 없는 사회를 만드는 첫걸음이 됩니다."</strong>
-                 <br /><br />
-                 본 캠페인은 정신질환에 대한 올바른 정보를 알리고 인식을 개선하기 위해 마련되었습니다.<br />
-                 입력해 주시는 정보는 캠페인 참여 확인 및 이벤트 경품 추첨을 위해서만 소중히 사용되며<br />
-                 종료 후 안전하게 파기됩니다.<br />
+                  <div style={{ textAlign: "center", marginBottom: "20px" }}> 
+                   <strong>"여러분의 소중한 참여가 편견 없는 사회를 만드는 첫걸음이 됩니다."</strong>
+                   <br /><br /> 
+                   본 캠페인은 정신질환에 대한 올바른 정보를 알리고 인식을 개선하기 위해 마련되었습니다.<br />
+                   입력해 주시는 정보는 캠페인 참여 확인 및 이벤트 경품 추첨을 위해서만 소중히 사용되며
+                   종료 후 안전하게 파기됩니다.
+                  </div>
+                  <br />
+                  <strong>[개인정보 수집 및 이용 동의]</strong><br/>
+                  수집 항목: 이름, 사는 곳, 전화번호<br/>
+                  수집 목적: 추첨 이벤트 당첨자 확인 및 경품 발송<br/>
+                  보유 기간: 이벤트 종료 후 3개월<br/>
+                  위 개인정보 수집·이용에 동의하지 않으실 수 있으며, 미동의 시 추첨 참여가 제한됩니다.
                 </div>
-
-                <br />
-                <strong>[개인정보 수집 및 이용 동의]</strong><br/>
-                수집 항목: 이름, 사는 곳, 전화번호<br/>
-                수집 목적: 추첨 이벤트 당첨자 확인 및 경품 발송<br/>
-                보유 기간: 이벤트 종료 후 3개월<br/>
-                위 개인정보 수집·이용에 동의하지 않으실 수 있으며, 미동의 시 추첨 참여가 제한됩니다.
-              </div>
                 <div className="consent-check-row" onClick={()=>setConsented(v=>!v)}>
                   <div className={`consent-checkbox ${consented?"checked":""}`}>{consented&&<Check/>}</div>
                   <span className="consent-label">개인정보 수집 및 이용에 동의합니다 (필수)</span>
