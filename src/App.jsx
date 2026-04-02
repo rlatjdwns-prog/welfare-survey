@@ -550,13 +550,11 @@ export default function App() {
 
               <div className="consent-box" style={{marginBottom:"28px"}}>
                 <div className="consent-text">
-                  <div style={{ textAlign: "center", marginBottom: "20px" }}> 
-                   <strong>[개인정보 수집 및 이용 동의]</strong><br/>
-                   수집 항목: 이름, 사는 곳, 전화번호<br/>
-                   수집 목적: 추첨 이벤트 당첨자 확인 및 경품 발송<br/>
-                   보유 기간: 이벤트 종료 후 3개월<br/>
-                   위 개인정보 수집·이용에 동의하지 않으실 수 있으며, 미동의 시 추첨 참여가 제한됩니다.
-                  </div>
+                  <strong>[개인정보 수집 및 이용 동의]</strong><br/>
+                  수집 항목: 이름, 사는 곳, 전화번호<br/>
+                  수집 목적: 추첨 이벤트 당첨자 확인 및 경품 발송<br/>
+                  보유 기간: 이벤트 종료 후 3개월<br/>
+                  위 개인정보 수집·이용에 동의하지 않으실 수 있으며, 미동의 시 추첨 참여가 제한됩니다.
                 </div>
                 <div className="consent-check-row" onClick={()=>setConsented(v=>!v)}>
                   <div className={`consent-checkbox ${consented?"checked":""}`}>{consented&&<Check/>}</div>
@@ -625,7 +623,7 @@ export default function App() {
           {/* LOTTERY */}
           {phase==="lottery"&&(
             <>
-              <div className="eyebrow">즉석 추첨 🎰</div>
+              <div className="eyebrow">행운의 선물 🎁</div>
               <h1 style={{marginBottom:"8px"}}>행운을 긁어보세요!</h1>
               <p className="subtitle" style={{marginBottom:"32px"}}>아래 카드를 클릭하면 당첨 여부를 확인할 수 있어요 ✨</p>
 
