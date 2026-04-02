@@ -512,7 +512,7 @@ export default function App() {
               {lottery.enabled&&activePrizes.length>0&&(
                 <div style={{marginBottom:"24px"}}>
                   <div style={{fontSize:"11px",fontWeight:600,color:"var(--gold)",letterSpacing:"1.5px",textTransform:"uppercase",marginBottom:"8px"}}>
-                    {maxReached?"🎁 이번 회차 추첨 마감":"🎁 퀴즈 완료 후 즉석 추첨"}
+                    {maxReached?"🎁 이번 회차 추첨 마감":"🎁 캠페인 참여자 중 2명에게 향기로운 선물을 보내드립니다."}
                   </div>
                   {!maxReached&&(
                     <div className="prize-list">
@@ -542,7 +542,7 @@ export default function App() {
             <>
               <div className="eyebrow">{intro.eyebrow}</div>
               <h2 style={{marginBottom:"8px"}}>참여자 정보 입력</h2>
-              <p className="subtitle" style={{marginBottom:"24px"}}>퀴즈 참여 및 추첨을 위해<br/>아래 정보를 먼저 입력해주세요</p>
+              <p className="subtitle" style={{marginBottom:"24px"}}>여러분의 소중한 참여가<br/>편견 없는 사회를 만드는 첫걸음이 됩니다.</p>
 
               <div className="form-field"><label className="form-label">이름 <span style={{color:"var(--wrong)"}}>*</span></label><input className="form-input" placeholder="홍길동" value={winName} onChange={e=>setWinName(e.target.value)}/></div>
               <div className="form-field"><label className="form-label">사는 곳 (구 또는 시) <span style={{color:"var(--wrong)"}}>*</span></label><input className="form-input" placeholder="예: 마포구 / 수원시" value={winRegion} onChange={e=>setWinRegion(e.target.value)}/></div>
@@ -613,7 +613,7 @@ export default function App() {
               <h1>결과 보기</h1>
               <p className="subtitle" style={{marginBottom:"28px"}}>"맞고 틀림보다 '이해'가 먼저! 아래에서 정답과 해설을 확인해 보세요."</p>
               {score&&<div className="quiz-score-box"><div className="quiz-score-num">{score.correct}<span style={{fontSize:"24px",color:"var(--muted)"}}>/{score.total}</span></div><div className="quiz-score-label">퀴즈 점수 · {Math.round(score.correct/score.total*100)}점</div></div>}
-              {lottery.enabled&&<div className="lottery-banner" onClick={()=>go("lottery")}><div className="lottery-banner-icon">🎰</div><div className="lottery-banner-text"><div className="lottery-banner-title">즉석 추첨 참여하기 →</div><div className="lottery-banner-desc">{lottery.description}</div></div></div>}
+              {lottery.enabled&&<div className="lottery-banner" onClick={()=>go("lottery")}><div className="lottery-banner-icon">🎁</div><div className="lottery-banner-text"><div className="lottery-banner-title">캠페인 참여 감사 선물 확인 →</div><div className="lottery-banner-desc">{lottery.description}</div></div></div>}
               {questions.map(question=>(
                 <div className="result-block" key={question.id}>
                   <div className="result-q-no">{question.type==="quiz"?<>Q{question.id}<span className="quiz-type-badge">🧠</span></>:`Q${question.id}`}</div>
