@@ -524,13 +524,14 @@ export default function App() {
               <div className="eyebrow">{intro.eyebrow}</div>
               <h1>{intro.title.split("\n").map((l,i,a)=><span key={i}>{l}{i<a.length-1&&<br/>}</span>)}</h1>
               <p className="subtitle">{intro.subtitle.split("\n").map((l,i,a)=><span key={i}>{l}{i<a.length-1&&<br/>}</span>)}</p>
-              {lottery.enabled&&activePrizes.length>0&&(()=>{
+              {lottery.enabled&&(lottery.prizes||[]).length>0&&(()=>{
                 const disp=lottery.soldOutDisplay||"hide";
+                // 숨김: 소진 시 영역 전체 숨김
                 if(maxReached&&disp==="hide") return null;
                 return(
                   <div style={{marginBottom:"24px"}}>
-                    <div style={{fontSize:"11px",fontWeight:600,color:maxReached?"var(--wrong)":"var(--gold)",letterSpacing:"1.5px",textTransform:"uppercase",marginBottom:"8px"}}>
-                      {maxReached?"🎁 이벤트 선물 현황":"🎁 캠페인 참여자 중 2명에게 향기로운 선물을 보내드립니다."}
+                    <div style={{fontSize:"11px",fontWeight:600,color:"var(--gold)",letterSpacing:"1.5px",textTransform:"uppercase",marginBottom:"8px"}}>
+                      🎁 캠페인 참여자 중 2명에게 향기로운 선물을 보내드립니다.
                     </div>
                     {/* 마감 안내 문구 */}
                     {maxReached&&disp==="message"&&(
@@ -538,20 +539,14 @@ export default function App() {
                         {lottery.soldOutMessage||"이번 이벤트 선물이 모두 소진되었습니다 🙏"}
                       </div>
                     )}
-                    {/* 그대로 표시 or 미소진 */}
-                    {(!maxReached||(maxReached&&disp==="show"))&&(
+                    {/* 그대로 표시: 소진 여부와 관계없이 항상 상품 목록 그대로 */}
+                    {(!maxReached||disp==="show")&&(
                       <div className="prize-list">
-                        {activePrizes.map(p=>{
-                          const stock=Number(p.stock||0);
-                          const used=prizeCount[p.name]||0;
-                          const full=stock>0&&used>=stock;
-                          return(
-                            <div className="prize-item" key={p.id} style={{opacity:full?0.5:1}}>
-                              <span className="prize-item-name">{full?"🚫":"🎁"} {p.name}</span>
-                              {full&&<span style={{fontSize:"11px",color:"var(--wrong)",fontWeight:600}}>소진</span>}
-                            </div>
-                          );
-                        })}
+                        {(lottery.prizes||[]).map(p=>(
+                          <div className="prize-item" key={p.id}>
+                            <span className="prize-item-name">🎁 {p.name}</span>
+                          </div>
+                        ))}
                       </div>
                     )}
                   </div>
