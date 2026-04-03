@@ -564,9 +564,10 @@ export default function App() {
 
               <div className="btn-row">
                 <button className="btn btn-ghost" onClick={()=>go("intro")}>← 이전</button>
-                <button className="btn btn-primary" onClick={async()=>{
-                  try{const ps=await apiGet("prizeStatus");if(ps.resetKey)setServerResetKey(ps.resetKey);if(ps.prizeCount)setPrizeCount(ps.prizeCount);}catch{}
+                <button className="btn btn-primary" onClick={()=>{
+                  // 화면 전환 즉시 + 서버 통신은 백그라운드
                   go("survey");
+                  apiGet("prizeStatus").then(ps=>{if(ps.resetKey)setServerResetKey(ps.resetKey);if(ps.prizeCount)setPrizeCount(ps.prizeCount);}).catch(()=>{});
                 }} disabled={!winName.trim()||!winRegion.trim()||!winContact.trim()||!consented}>퀴즈 시작하기 <Arrow/></button>
               </div>
             </>
