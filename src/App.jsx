@@ -33,6 +33,8 @@ const QUESTIONS_DEFAULT = [
 
 const LOTTERY_DEFAULT = {
   enabled: true,
+  soldOutDisplay: "hide",       // "hide" | "message" | "show"
+  soldOutMessage: "이번 이벤트 선물이 모두 소진되었습니다 🙏",
   description: "퀴즈 참여자 중 추첨하여 선물을 드립니다!",
   resetKey: "1",
   prizes: [
@@ -522,22 +524,39 @@ export default function App() {
               <div className="eyebrow">{intro.eyebrow}</div>
               <h1>{intro.title.split("\n").map((l,i,a)=><span key={i}>{l}{i<a.length-1&&<br/>}</span>)}</h1>
               <p className="subtitle">{intro.subtitle.split("\n").map((l,i,a)=><span key={i}>{l}{i<a.length-1&&<br/>}</span>)}</p>
-              {lottery.enabled&&activePrizes.length>0&&(
-                <div style={{marginBottom:"24px"}}>
-                  <div style={{fontSize:"11px",fontWeight:600,color:"var(--gold)",letterSpacing:"1.5px",textTransform:"uppercase",marginBottom:"8px"}}>
-                    {maxReached?"🎁 이번 회차 추첨 마감":"🎁 캠페인 참여자 중 2명에게 향기로운 선물을 보내드립니다."}
-                  </div>
-                  {!maxReached&&(
-                    <div className="prize-list">
-                      {activePrizes.map(p=>(
-                        <div className="prize-item" key={p.id}>
-                          <span className="prize-item-name">🎁 {p.name}</span>
-                        </div>
-                      ))}
+              {lottery.enabled&&activePrizes.length>0&&(()=>{
+                const disp=lottery.soldOutDisplay||"hide";
+                if(maxReached&&disp==="hide") return null;
+                return(
+                  <div style={{marginBottom:"24px"}}>
+                    <div style={{fontSize:"11px",fontWeight:600,color:maxReached?"var(--wrong)":"var(--gold)",letterSpacing:"1.5px",textTransform:"uppercase",marginBottom:"8px"}}>
+                      {maxReached?"🎁 이벤트 선물 현황":"🎁 캠페인 참여자 중 2명에게 향기로운 선물을 보내드립니다."}
                     </div>
-                  )}
-                </div>
-              )}
+                    {/* 마감 안내 문구 */}
+                    {maxReached&&disp==="message"&&(
+                      <div style={{background:"var(--wrong-bg)",border:"1px solid var(--wrong)",borderRadius:"10px",padding:"12px 16px",fontSize:"13px",color:"var(--wrong)",fontWeight:500}}>
+                        {lottery.soldOutMessage||"이번 이벤트 선물이 모두 소진되었습니다 🙏"}
+                      </div>
+                    )}
+                    {/* 그대로 표시 or 미소진 */}
+                    {(!maxReached||(maxReached&&disp==="show"))&&(
+                      <div className="prize-list">
+                        {activePrizes.map(p=>{
+                          const stock=Number(p.stock||0);
+                          const used=prizeCount[p.name]||0;
+                          const full=stock>0&&used>=stock;
+                          return(
+                            <div className="prize-item" key={p.id} style={{opacity:full?0.5:1}}>
+                              <span className="prize-item-name">{full?"🚫":"🎁"} {p.name}</span>
+                              {full&&<span style={{fontSize:"11px",color:"var(--wrong)",fontWeight:600}}>소진</span>}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
               <div style={{display:"flex",gap:"28px",marginBottom:"36px"}}>
                 {[`${total}문항`,intro.badge1,intro.badge2].map(t=>(
                   <div key={t} style={{textAlign:"center"}}>
@@ -756,6 +775,19 @@ export default function App() {
 
                   <div className="edit-label">추첨 안내 문구</div>
                   <input className="edit-field" value={editLottery.description} onChange={e=>setEditLottery({...editLottery,description:e.target.value})}/>
+
+                  <div className="edit-label" style={{marginTop:"16px"}}>재고 소진 시 첫 화면 표시 방식</div>
+                  <select className="type-select" value={editLottery.soldOutDisplay||"hide"} onChange={e=>setEditLottery({...editLottery,soldOutDisplay:e.target.value})}>
+                    <option value="hide">숨김 (선물 영역 전체 숨기기)</option>
+                    <option value="message">마감 안내 문구 표시</option>
+                    <option value="show">그대로 표시 (소진 표시만 추가)</option>
+                  </select>
+                  {(editLottery.soldOutDisplay||"hide")==="message"&&(
+                    <>
+                      <div className="edit-label">마감 안내 문구</div>
+                      <input className="edit-field" value={editLottery.soldOutMessage||""} placeholder="이번 이벤트 선물이 모두 소진되었습니다 🙏" onChange={e=>setEditLottery({...editLottery,soldOutMessage:e.target.value})}/>
+                    </>
+                  )}
 
                   {/* 상품별 당첨자 현황 */}
                   <div className="winner-status" style={{marginTop:"8px"}}>
