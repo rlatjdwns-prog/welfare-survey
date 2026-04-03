@@ -688,7 +688,7 @@ export default function App() {
                 <p className="cta-contact">{company.contact}</p>
               </div>
               <div className="divider"/>
-              <div style={{textAlign:"center"}}><button className="btn btn-ghost" style={{fontSize:"13px"}} onClick={()=>{setAnswers({});setQuizRevealed({});setStep(0);go("intro");}}>다시 시작하기</button></div>
+              <div style={{textAlign:"center"}}><button className="btn btn-ghost" style={{fontSize:"13px"}} onClick={()=>{setAnswers({});setQuizRevealed({});setStep(0);go("intro");}}>처음 화면으로</button></div>
             </>
           )}
 
