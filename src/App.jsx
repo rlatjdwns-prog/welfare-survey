@@ -298,6 +298,7 @@ export default function App() {
   const [intro,setIntro]             = useState(INTRO_DEFAULT);
   const [lottery,setLottery]         = useState(LOTTERY_DEFAULT);
   const [prizeCount,setPrizeCount]   = useState({});
+  const [refreshing,setRefreshing]   = useState(false);
   const [serverResetKey,setServerResetKey] = useState("1");
   const [winnerRowIndex,setWinnerRowIndex] = useState(null);
   const [winAddress,setWinAddress]   = useState("");
@@ -429,6 +430,11 @@ export default function App() {
     setResetting(false); setConfirmReset(false);
   };
 
+  const refreshPrizeStatus=async()=>{
+    setRefreshing(true);
+    try{const ps=await apiGet("prizeStatus");if(ps.prizeCount)setPrizeCount(ps.prizeCount);if(ps.resetKey)setServerResetKey(ps.resetKey);}catch{}
+    setRefreshing(false);
+  };
   const handleAdminClick=()=>{setPwOpen(true);setPwVal("");setPwErr(false);};
   const handlePwSubmit=()=>{if(pwVal==="0723"){setPwOpen(false);openAdmin();}else{setPwErr(true);setPwVal("");}};
   const openAdmin=async()=>{
@@ -455,7 +461,14 @@ export default function App() {
   const delPrize=(pi)=>{if(editLottery.prizes.length>1)setEditLottery({...editLottery,prizes:editLottery.prizes.filter((_,i)=>i!==pi)});};
   const totalProb=(prizes)=>prizes.reduce((s,p)=>s+Number(p.probability||0),0);
 
-  const saveAdmin=async()=>{setSaving(true);try{await apiPost("saveConfig",{questions:editQ,company:editCo,intro:editIntro,lottery:{...editLottery,resetKey:serverResetKey}});}catch{}setQuestions(editQ);setCompany(editCo);setIntro(editIntro);setLottery({...editLottery,resetKey:serverResetKey});setSaving(false);go("intro");};
+  const saveAdmin=async()=>{
+    setSaving(true);
+    // 구버전 필드 제거 후 저장
+    const {maxWinners:_mw, probability:_p, prize:_pr, ...cleanLottery} = {...editLottery, resetKey:serverResetKey};
+    try{await apiPost("saveConfig",{questions:editQ,company:editCo,intro:editIntro,lottery:cleanLottery});}catch{}
+    setQuestions(editQ);setCompany(editCo);setIntro(editIntro);setLottery(cleanLottery);
+    setSaving(false);go("intro");
+  };
 
   const score=calcQuizScore();
   // 재고 소진 여부: 모든 상품이 소진됐으면 마감
@@ -688,7 +701,7 @@ export default function App() {
                 <p className="cta-contact">{company.contact}</p>
               </div>
               <div className="divider"/>
-              <div style={{textAlign:"center"}}><button className="btn btn-ghost" style={{fontSize:"13px"}} onClick={()=>{setAnswers({});setQuizRevealed({});setStep(0);go("intro");}}>처음 화면으로</button></div>
+              <div style={{textAlign:"center"}}><button className="btn btn-ghost" style={{fontSize:"13px"}} onClick={()=>{setAnswers({});setQuizRevealed({});setStep(0);go("intro");}}>다시 시작하기</button></div>
             </>
           )}
 
@@ -746,7 +759,12 @@ export default function App() {
 
                   {/* 상품별 당첨자 현황 */}
                   <div className="winner-status" style={{marginTop:"8px"}}>
-                    <div className="winner-status-label" style={{marginBottom:"10px"}}>📊 이번 회차 상품별 현황</div>
+                    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"10px"}}>
+                      <span className="winner-status-label">📊 이번 회차 상품별 현황</span>
+                      <button onClick={refreshPrizeStatus} disabled={refreshing} style={{background:"none",border:"1px solid var(--gold)",borderRadius:"50px",padding:"4px 12px",fontSize:"11px",color:"var(--gold)",cursor:"pointer",fontFamily:"inherit",fontWeight:600}}>
+                        {refreshing?"확인 중...":"🔄 현황 갱신"}
+                      </button>
+                    </div>
                     {(editLottery.prizes||[]).map(p=>{
                       const stock=Number(p.stock||0);
                       const used=prizeCount[p.name]||0;
