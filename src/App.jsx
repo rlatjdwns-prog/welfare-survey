@@ -788,6 +788,24 @@ export default function App() {
                 <div className="edit-label">소개글</div><textarea className="edit-field" style={{height:"90px"}} value={editCo.description} onChange={e=>setEditCo({...editCo,description:e.target.value})}/>
                 <div className="edit-label">CTA 버튼 문구</div><input className="edit-field" value={editCo.cta} onChange={e=>setEditCo({...editCo,cta:e.target.value})}/>
                 <div className="edit-label">연락처</div><input className="edit-field" value={editCo.contact} onChange={e=>setEditCo({...editCo,contact:e.target.value})}/>
+                <div className="edit-label" style={{marginTop:"16px"}}>서비스 카드 (4개)</div>
+                {(editCo.features||[]).map((f,fi)=>(
+                  <div key={fi} className="edit-q-card" style={{marginBottom:"10px"}}>
+                    <div style={{fontSize:"11px",color:"var(--muted)",fontWeight:600,marginBottom:"8px"}}>카드 {fi+1}</div>
+                    <div style={{display:"grid",gridTemplateColumns:"60px 1fr",gap:"8px",marginBottom:"8px"}}>
+                      <div>
+                        <div className="edit-label" style={{marginTop:0}}>아이콘</div>
+                        <input className="edit-field" style={{textAlign:"center",fontSize:"20px"}} value={f.icon} onChange={e=>{const fs=[...editCo.features];fs[fi]={...fs[fi],icon:e.target.value};setEditCo({...editCo,features:fs});}}/>
+                      </div>
+                      <div>
+                        <div className="edit-label" style={{marginTop:0}}>제목</div>
+                        <input className="edit-field" value={f.title} onChange={e=>{const fs=[...editCo.features];fs[fi]={...fs[fi],title:e.target.value};setEditCo({...editCo,features:fs});}}/>
+                      </div>
+                    </div>
+                    <div className="edit-label" style={{marginTop:0}}>설명</div>
+                    <input className="edit-field" value={f.desc} onChange={e=>{const fs=[...editCo.features];fs[fi]={...fs[fi],desc:e.target.value};setEditCo({...editCo,features:fs});}}/>
+                  </div>
+                ))}
               </div>
 
               <div className="divider"/>
